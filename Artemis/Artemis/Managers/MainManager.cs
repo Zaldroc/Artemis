@@ -39,7 +39,6 @@ namespace Artemis.Managers
             _processTimer.Start();
 
             ProgramEnabled = false;
-            Running = false;
 
             // Create and start the web server
             GameStateWebServer = gameStateWebServer;
@@ -47,10 +46,6 @@ namespace Artemis.Managers
 
             // Start the named pipe
             PipeServer.Start("artemis");
-
-            // Start the update task
-            var updateTask = new Task(Updater.UpdateApp);
-            updateTask.Start();
 
             // Listen for power mode changes
             SystemEvents.PowerModeChanged += OnPowerChange;
@@ -71,7 +66,6 @@ namespace Artemis.Managers
         public PipeServer PipeServer { get; set; }
         public GameStateWebServer GameStateWebServer { get; set; }
         public bool ProgramEnabled { get; private set; }
-        public bool Running { get; private set; }
 
         public void Dispose()
         {
@@ -110,6 +104,7 @@ namespace Artemis.Managers
         public async void EnableProgram()
         {
             Logger.Debug("Enabling program");
+
             ProgramEnabled = true;
             await LoopManager.StartAsync();
 
@@ -123,9 +118,12 @@ namespace Artemis.Managers
         public void DisableProgram()
         {
             Logger.Debug("Disabling program");
+
             foreach (var overlayModule in ModuleManager.OverlayModules)
+            {
                 if (overlayModule.Settings.IsEnabled)
                     overlayModule.Dispose();
+            }
             LoopManager.Stop();
             ProgramEnabled = false;
             RaiseEnabledChangedEvent(new EnabledChangedEventArgs(ProgramEnabled));

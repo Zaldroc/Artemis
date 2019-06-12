@@ -27,7 +27,7 @@ namespace Artemis.DeviceProviders.Razer
 
             Height = Constants.MaxRows;
             Width = Constants.MaxColumns;
-            PreviewSettings = new PreviewSettings(665, 175, new Thickness(0, -15, 0, 0), Resources.blackwidow);
+            PreviewSettings = new PreviewSettings(new Rect(26, 56, 906, 234), Resources.blackwidow);
             _generalSettings = SettingsProvider.Load<GeneralSettings>();
         }
 
@@ -37,8 +37,11 @@ namespace Artemis.DeviceProviders.Razer
                 return false;
 
             // Some people have Synapse installed, but not a Chroma keyboard, deal with this
+            Chroma.Instance.Initialize();
             var blackWidowFound = Chroma.Instance.Query(Devices.Blackwidow).Connected;
             var blackWidowTeFound = Chroma.Instance.Query(Devices.BlackwidowTe).Connected;
+            Chroma.Instance.Uninitialize();
+
             return blackWidowFound || blackWidowTeFound;
         }
 
@@ -54,7 +57,7 @@ namespace Artemis.DeviceProviders.Razer
 
         public override void DrawBitmap(Bitmap bitmap)
         {
-            var razerArray = RazerUtilities.BitmapColorArray(bitmap, Height, Width);
+            var razerArray = RazerUtilities.BitmaptoKeyboardEffect(bitmap, Height, Width);
             Chroma.Instance.Keyboard.SetCustom(razerArray);
         }
 

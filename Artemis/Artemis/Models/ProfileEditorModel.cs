@@ -26,9 +26,9 @@ namespace Artemis.Models
         private readonly WindowService _windowService;
         private FileSystemWatcher _watcher;
         private ModuleModel _luaModule;
+        private ProfileModel _luaEditorProfile;
 
-        public ProfileEditorModel(WindowService windowService, MetroDialogService dialogService,
-            DeviceManager deviceManager, LuaManager luaManager)
+        public ProfileEditorModel(WindowService windowService, MetroDialogService dialogService, DeviceManager deviceManager, LuaManager luaManager)
         {
             _windowService = windowService;
             _dialogService = dialogService;
@@ -50,7 +50,7 @@ namespace Artemis.Models
                 new ConstructorArgument("dataModel", dataModel),
                 new ConstructorArgument("layer", layer)
             };
-            _windowService.ShowDialog<LayerEditorViewModel>(args);
+            _windowService.ShowDialog<LayerEditorViewModel>("Artemis | Edit layer", null, args);
 
             // If the layer was a folder, but isn't anymore, assign it's children to it's parent.
             if (layer.LayerType is FolderType || !layer.Children.Any())
@@ -142,15 +142,22 @@ namespace Artemis.Models
 
         public async Task RenameProfile(ProfileModel profileModel)
         {
+            // Store the old name
+            var oldName = profileModel.Name;
             var name = await GetValidProfileName("Rename profile", "Please enter a unique new profile name");
             // User cancelled
             if (name == null)
                 return;
+
+            // MakeProfileUnique does a check but also modifies the profile, set the old name back
             var doRename = await MakeProfileUnique(profileModel, name, profileModel.Name);
+            var newName = profileModel.Name;
+            profileModel.Name = oldName;
+
             if (!doRename)
                 return;
 
-            ProfileProvider.RenameProfile(profileModel, profileModel.Name);
+            ProfileProvider.RenameProfile(profileModel, newName);
         }
 
         public async Task<ProfileModel> DuplicateProfile(ProfileModel selectedProfile)
@@ -171,21 +178,13 @@ namespace Artemis.Models
             return newProfile;
         }
 
-        public async Task<bool> DeleteProfile(ProfileModel selectedProfile, ModuleModel moduleModel)
+        public async Task<bool> ConfirmDeleteProfile(ProfileModel selectedProfile, ModuleModel moduleModel)
         {
             var confirm = await _dialogService.ShowQuestionMessageBox("Delete profile",
                 $"Are you sure you want to delete the profile named: {selectedProfile.Name}?\n\n" +
                 "This cannot be undone.");
-            if (!confirm.Value)
-                return false;
 
-            var defaultProfile = ProfileProvider.GetProfile(_deviceManager.ActiveKeyboard, moduleModel, "Default");
-            var deleteProfile = selectedProfile;
-
-            moduleModel.ChangeProfile(defaultProfile);
-            ProfileProvider.DeleteProfile(deleteProfile);
-
-            return true;
+            return confirm.Value;
         }
 
         public async Task<ProfileModel> ImportProfile(ModuleModel moduleModel)
@@ -292,6 +291,9 @@ namespace Artemis.Models
 
         public void OpenLuaEditor(ModuleModel moduleModel)
         {
+            if (moduleModel.ProfileModel == null)
+                return;
+
             // Clean up old environment
             DisposeLuaWatcher();
 
@@ -307,6 +309,7 @@ namespace Artemis.Models
 
             // Watch the file for changes
             _luaModule = moduleModel;
+            _luaEditorProfile = moduleModel.ProfileModel;
             _watcher = new FileSystemWatcher(Path.GetTempPath(), fileName);
             _watcher.Changed += LuaFileChanged;
             _watcher.EnableRaisingEvents = true;
@@ -334,18 +337,20 @@ namespace Artemis.Models
                 {
                     using (var sr = new StreamReader(fs))
                     {
-                        _luaModule.ProfileModel.LuaScript = sr.ReadToEnd();
+                        _luaEditorProfile.LuaScript = sr.ReadToEnd();
                     }
                 }
 
-                ProfileProvider.AddOrUpdate(_luaModule.ProfileModel);
-                _luaManager.SetupLua(_luaModule.ProfileModel);
+                ProfileProvider.AddOrUpdate(_luaEditorProfile);
+                if (_luaManager.ProfileModel == _luaEditorProfile)
+                    _luaManager.SetupLua(_luaModule.ProfileModel);
             }
         }
 
         private void DisposeLuaWatcher()
         {
-            if (_watcher == null) return;
+            if (_watcher == null)
+                return;
             _watcher.Changed -= LuaFileChanged;
             _watcher.Dispose();
             _watcher = null;
@@ -359,8 +364,6 @@ namespace Artemis.Models
         #endregion
 
         #region Rendering
-
-        
 
         #endregion
     }

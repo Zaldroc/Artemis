@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -28,7 +29,7 @@ namespace Artemis.DeviceProviders.CoolerMaster
             Height = 6;
             Width = 22;
 
-            PreviewSettings = new PreviewSettings(670, 189, new Thickness(-2, -5, 0, 0), Resources.masterkeys_pro_l);
+            PreviewSettings = new PreviewSettings(new Rect(17, 13, 812, 219), Resources.masterkeys_pro_l);
             _generalSettings = SettingsProvider.Load<GeneralSettings>();
         }
 
@@ -67,11 +68,14 @@ namespace Artemis.DeviceProviders.CoolerMaster
                     for (var y = 0; y < Height; y++)
                     {
                         var c = b.GetPixel(x, y);
+                        if (c.R != 0)
+                            Console.WriteLine();
                         matrix.KeyColor[y, x] = new KEY_COLOR(c.R, c.G, c.B);
                     }
                 }
 
                 // Send the matrix to the keyboard
+                CmSdk.SetControlDevice(DEVICE_INDEX.DEV_MKeys_L);
                 CmSdk.SetAllLedColor(matrix);
             }
         }

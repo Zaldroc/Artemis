@@ -27,7 +27,7 @@ namespace Artemis.DeviceProviders.Corsair
             Logger = logger;
             Name = "Corsair RGB Keyboard";
             CantEnableText = "Couldn't connect to your Corsair keyboard.\n" +
-                             "Please check your cables and/or drivers (could be outdated) and that Corsair Utility Engine is running.\n" +
+                             "Please check your cables and/or drivers (could be outdated, you need the latest CUE 2.x) and that Corsair Utility Engine is running.\n" +
                              "In CUE, make sure \"Enable SDK\" is checked under Global Settings.\n\n" +
                              "If needed, you can select a different keyboard in Artemis under settings.";
         }
@@ -44,8 +44,11 @@ namespace Artemis.DeviceProviders.Corsair
         /// </summary>
         public override void Enable()
         {
-            if (!CueSDK.IsInitialized)
-                CueSDK.Initialize();
+            lock (CorsairUtilities.SDKLock)
+            {
+                if (!CueSDK.IsInitialized)
+                    CueSDK.Initialize(true);
+            }
 
             CueSDK.UpdateMode = UpdateMode.Manual;
             _keyboard = CueSDK.KeyboardSDK;
@@ -55,7 +58,13 @@ namespace Artemis.DeviceProviders.Corsair
                     Height = 7;
                     Width = 25;
                     Slug = "corsair-k95-rgb";
-                    PreviewSettings = new PreviewSettings(676, 190, new Thickness(0, -15, 0, 0), Resources.k95);
+                    PreviewSettings = new PreviewSettings(new Rect(20, 26, 1066, 282), Resources.k95);
+                    break;
+                case "K95 RGB PLATINUM":
+                    Height = 9;
+                    Width = 22;
+                    Slug = "corsair-k95-rgb-platinum";
+                    PreviewSettings = new PreviewSettings(new Rect(12, 1, 1075, 346), Resources.k95_platinum);
                     break;
                 case "K70 RGB":
                 case "K70 RGB RAPIDFIRE":
@@ -63,7 +72,7 @@ namespace Artemis.DeviceProviders.Corsair
                     Height = 7;
                     Width = 21;
                     Slug = "corsair-k70-rgb";
-                    PreviewSettings = new PreviewSettings(676, 210, new Thickness(0, -25, 0, 0), Resources.k70);
+                    PreviewSettings = new PreviewSettings(new Rect(15, 26, 929, 282), Resources.k70);
                     break;
                 case "K65 RGB":
                 case "CGK65 RGB":
@@ -72,17 +81,18 @@ namespace Artemis.DeviceProviders.Corsair
                     Height = 7;
                     Width = 18;
                     Slug = "corsair-k65-rgb";
-                    PreviewSettings = new PreviewSettings(610, 240, new Thickness(0, -30, 0, 0), Resources.k65);
+                    PreviewSettings = new PreviewSettings(new Rect(15, 30, 751, 284), Resources.k65);
                     break;
                 case "STRAFE RGB":
-                    Height = 7;
+                    Height = 8;
                     Width = 22;
                     Slug = "corsair-strafe-rgb";
-                    PreviewSettings = new PreviewSettings(665, 215, new Thickness(0, -5, 0, 0), Resources.strafe);
+                    PreviewSettings = new PreviewSettings(new Rect(23, 12, 937, 324), Resources.strafe);
                     break;
             }
 
             Logger.Debug("Corsair SDK reported device as: {0}", _keyboard.DeviceInfo.Model);
+
             _keyboard.Brush = _keyboardBrush ?? (_keyboardBrush = new ImageBrush());
         }
 
@@ -90,8 +100,7 @@ namespace Artemis.DeviceProviders.Corsair
         {
             try
             {
-                if (CueSDK.IsInitialized)
-                    CueSDK.Reinitialize();
+                CueSDK.Reset();
             }
             catch (WrapperException e)
             {
@@ -108,30 +117,8 @@ namespace Artemis.DeviceProviders.Corsair
         /// <param name="bitmap"></param>
         public override void DrawBitmap(Bitmap bitmap)
         {
-            using (var image = ImageUtilities.ResizeImage(bitmap, Width, Height))
-            {
-                // For STRAFE, stretch the image on row 2.
-                if (_keyboard.DeviceInfo.Model == "STRAFE RGB")
-                {
-                    using (var strafeBitmap = new Bitmap(22, 8))
-                    {
-                        using (var g = Graphics.FromImage(strafeBitmap))
-                        {
-                            g.DrawImage(image, new Point(0, 0));
-                            g.DrawImage(image, new Rectangle(0, 3, 22, 7), new Rectangle(0, 2, 22, 7),
-                                GraphicsUnit.Pixel);
-
-                            _keyboardBrush.Image = strafeBitmap;
-                            _keyboard.Update();
-                        }
-                    }
-                }
-                else
-                {
-                    _keyboardBrush.Image = image;
-                    _keyboard.Update();
-                }
-            }
+            _keyboardBrush.Image = bitmap;
+            _keyboard.Update();
         }
 
         public override KeyMatch? GetKeyPosition(Keys keyCode)
@@ -143,7 +130,9 @@ namespace Artemis.DeviceProviders.Corsair
             try
             {
                 cueLed = _keyboard.Leds.FirstOrDefault(k => k.Id.ToString() == keyCode.ToString()) ??
-                         _keyboard.Leds.FirstOrDefault(k => k.Id == KeyMap.FormsKeys[keyCode]);
+                         _keyboard.Leds.FirstOrDefault(k => k.Id == CorsairUtilities.FormsKeys[keyCode]);
+
+                Logger.Trace("Keycode: {0} resolved to CUE LED: {1}", keyCode, cueLed);
             }
             catch (Exception)
             {
@@ -154,7 +143,7 @@ namespace Artemis.DeviceProviders.Corsair
                 return null;
 
             var center = cueLed.LedRectangle.GetCenter();
-            return new KeyMatch(keyCode, (int)(center.X * widthMultiplier), (int)(center.Y * heightMultiplier));
+            return new KeyMatch(keyCode, (int) (center.X * widthMultiplier), (int) (center.Y * heightMultiplier));
         }
     }
 }

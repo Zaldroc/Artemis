@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Threading;
+using Artemis.DeviceProviders.Corsair.Utilities;
 using CUE.NET;
 using CUE.NET.Brushes;
 using CUE.NET.Devices.Generic.Enums;
@@ -23,9 +24,19 @@ namespace Artemis.DeviceProviders.Corsair
 
         public override bool TryEnable()
         {
-            CanUse = CanInitializeSdk();
-            if (CanUse && !CueSDK.IsInitialized)
-                CueSDK.Initialize();
+            try
+            {
+                lock (CorsairUtilities.SDKLock)
+                {
+                    CanUse = CanInitializeSdk();
+                    if (CanUse && !CueSDK.IsInitialized)
+                        CueSDK.Initialize(true);
+                }
+            }
+            catch (Exception)
+            {
+                CanUse = false;
+            }
 
             Logger.Debug("Attempted to enable Corsair mousemat. CanUse: {0}", CanUse);
 

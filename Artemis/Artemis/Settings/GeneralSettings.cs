@@ -1,14 +1,18 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Web.Security;
 using System.Windows;
 using Artemis.DAL;
 using Artemis.Profiles.Layers.Types.AmbientLight.ScreenCapturing;
+using Artemis.Properties;
 using Artemis.Utilities;
+using Artemis.Utilities.ActiveWindowDetection;
 using Caliburn.Micro;
 using MahApps.Metro;
+//using Microsoft.Win32.TaskScheduler;
 using Newtonsoft.Json;
-using Squirrel;
+using Newtonsoft.Json.Converters;
 
 namespace Artemis.Settings
 {
@@ -16,8 +20,7 @@ namespace Artemis.Settings
     {
         public GeneralSettings()
         {
-            //ThemeManager.AddAccent("CorsairYellow", new Uri("pack://application:,,,/Styles/Accents/CorsairYellow.xaml"));
-            //ApplyAutorun();
+            ThemeManager.AddAccent("CorsairYellow", new Uri("pack://application:,,,/Styles/Accents/CorsairYellow.xaml"));
         }
 
         [DefaultValue("GeneralProfile")]
@@ -68,16 +71,21 @@ namespace Artemis.Settings
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
         public string LogLevel { get; set; }
 
-        public Version LastRanVersion { get; set; }
+        [DefaultValue(ActiveWindowDetectionType.Events)]
+        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+        public ActiveWindowDetectionType ActiveWindowDetection { get; set; }
 
         public void Save()
         {
             SettingsProvider.Save(this);
+
+            Logging.SetupLogging(LogLevel);
+            ActiveWindowHelper.SetActiveWindowDetectionType(ActiveWindowDetection);
             ApplyAutorun();
             ApplyTheme();
             ApplyGamestatePort();
             ApplyScreenCaptureFPS();
-            Logging.SetupLogging(LogLevel);
         }
 
         public void Reset(bool save = false)
@@ -98,24 +106,24 @@ namespace Artemis.Settings
 
         public void ApplyAutorun()
         {
-            using (var mgr = new UpdateManager(""))
+            if (Autorun)
             {
-                try
-                {
-                    if (Autorun)
-                        mgr.CreateShortcutsForExecutable("Artemis.exe", ShortcutLocation.Startup, false, "--autorun");
-                    else
-                        mgr.RemoveShortcutsForExecutable("Artemis.exe", ShortcutLocation.Startup);
-                }
-                catch (FileNotFoundException)
-                {
-                    // Ignored, only happens when running from VS
-                }
-                catch (DirectoryNotFoundException)
-                {
-                    // Ignored, only happens when running from VS
-                }
+                // Overwrite any existing tasks in case the installation folder changed
+                var path = Path.GetTempFileName();
+                var artemisPath = AppDomain.CurrentDomain.BaseDirectory.Substring(0, AppDomain.CurrentDomain.BaseDirectory.Length - 1);
+                var xml = Resources.Artemis_autorun
+                    .Replace("{{artemisPath}}", artemisPath)
+                    .Replace("{{userId}}", System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value)
+                    .Replace("{{author}}", System.Security.Principal.WindowsIdentity.GetCurrent().Name);
 
+                File.WriteAllText(path, xml);
+                RunWithoutWindow(Environment.SystemDirectory + "\\schtasks.exe", $"/Create /XML \"{path}\" /tn \"Artemis\"");
+                File.Delete(path);
+            }
+            else
+            {
+                // Remove the task if it is present
+                RunWithoutWindow(Environment.SystemDirectory + "\\schtasks.exe", "/Delete /TN Artemis /f");
             }
         }
 
@@ -148,6 +156,26 @@ namespace Artemis.Settings
         public void ApplyScreenCaptureFPS()
         {
             ScreenCaptureManager.UpdateRate = 1.0 / ScreenCaptureFPS;
+        }
+
+        private void RunWithoutWindow(string fileName, string arguments)
+        {
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo =
+                {
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true, 
+                    Verb = "runas",
+                    FileName = fileName,
+                    Arguments = arguments
+                }
+            };
+
+            // Go
+            process.Start();
+            process.WaitForExit();
         }
     }
 }

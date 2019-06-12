@@ -1,35 +1,37 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using Artemis.DAL;
 using Artemis.Events;
 using Artemis.Managers;
+using Artemis.Services;
 using Artemis.Settings;
 using Artemis.Utilities;
+using Artemis.Utilities.ActiveWindowDetection;
 using Caliburn.Micro;
 using MahApps.Metro.Controls;
 using NLog;
 using ILogger = Ninject.Extensions.Logging.ILogger;
-using Process = System.Diagnostics.Process;
 
 namespace Artemis.ViewModels.Flyouts
 {
     public sealed class FlyoutSettingsViewModel : FlyoutBaseViewModel
     {
-        private readonly DebugViewModel _debugViewModel;
         private readonly ILogger _logger;
+        private readonly WindowService _windowService;
+        private readonly MetroDialogService _metroDialogService;
         private string _activeEffectName;
         private bool _enableDebug;
         private GeneralSettings _generalSettings;
         private string _selectedKeyboardProvider;
 
-        public FlyoutSettingsViewModel(MainManager mainManager, ILogger logger, DebugViewModel debugViewModel)
+        public FlyoutSettingsViewModel(MainManager mainManager, ILogger logger, WindowService windowService, MetroDialogService metroDialogService)
         {
             _logger = logger;
-            _debugViewModel = debugViewModel;
+            _windowService = windowService;
+            _metroDialogService = metroDialogService;
 
             MainManager = mainManager;
             Header = "Settings";
@@ -38,6 +40,8 @@ namespace Artemis.ViewModels.Flyouts
 
             LogLevels = new BindableCollection<string>();
             LogLevels.AddRange(LogLevel.AllLoggingLevels.Select(l => l.Name));
+
+            ActiveWindowDetections = new BindableCollection<ActiveWindowDetectionType>(Enum.GetValues(typeof(ActiveWindowDetectionType)).Cast<ActiveWindowDetectionType>());
 
             PropertyChanged += KeyboardUpdater;
             mainManager.EnabledChanged += MainManagerEnabledChanged;
@@ -98,6 +102,7 @@ namespace Artemis.ViewModels.Flyouts
         public string VersionText => "Artemis " + Assembly.GetExecutingAssembly().GetName().Version;
 
         public BindableCollection<string> LogLevels { get; set; }
+        public BindableCollection<ActiveWindowDetectionType> ActiveWindowDetections { get; set; }
 
         public string SelectedTheme
         {
@@ -129,6 +134,17 @@ namespace Artemis.ViewModels.Flyouts
                 if (value == GeneralSettings.LogLevel) return;
                 GeneralSettings.LogLevel = value;
                 NotifyOfPropertyChange(() => SelectedLogLevel);
+            }
+        }
+
+        public ActiveWindowDetectionType SelectedActiveWindowDetection
+        {
+            get { return GeneralSettings.ActiveWindowDetection; }
+            set
+            {
+                if (value == GeneralSettings.ActiveWindowDetection) return;
+                GeneralSettings.ActiveWindowDetection = value;
+                NotifyOfPropertyChange(() => SelectedActiveWindowDetection);
             }
         }
 
@@ -196,7 +212,9 @@ namespace Artemis.ViewModels.Flyouts
                 MainManager.LoopManager.StartAsync();
             }
             else
+            {
                 MainManager.DeviceManager.ReleaseActiveKeyboard(true);
+            }
         }
 
         public void ToggleEnabled()
@@ -209,20 +227,13 @@ namespace Artemis.ViewModels.Flyouts
 
         public void ShowLogs()
         {
-            var logPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Artemis\logs";
+            var logPath = GeneralHelpers.DataFolder + "logs";
             System.Diagnostics.Process.Start(logPath);
         }
 
         public void ShowDebug()
         {
-            IWindowManager manager = new WindowManager();
-            dynamic settings = new ExpandoObject();
-            var icon = ImageUtilities.GenerateWindowIcon();
-
-            settings.Title = "Artemis | Debugger";
-            settings.Icon = icon;
-
-            manager.ShowWindow(_debugViewModel, null, settings);
+            _windowService.ShowWindow<DebugViewModel>("Artemis | Debugger");
         }
 
         public void ResetSettings()
@@ -234,6 +245,21 @@ namespace Artemis.ViewModels.Flyouts
         public void SaveSettings()
         {
             GeneralSettings.Save();
+        }
+
+        public async void CheckForUpdate()
+        {
+            var update = await Updater.CheckForUpdate(_metroDialogService);
+            if (update == null)
+            {
+                _metroDialogService.ShowMessageBox("Update check failed",
+                    "Couldn't perform the update check, please check your internet connection and try again." +
+                    "You can also perform a manual update by downloading and installing the latest version from GitHub");
+            }
+            else if (!update.Value)
+            {
+                _metroDialogService.ShowMessageBox("No update available", "You're running the latest version of Artemis.");
+            }
         }
 
         public void NavigateTo(string url)

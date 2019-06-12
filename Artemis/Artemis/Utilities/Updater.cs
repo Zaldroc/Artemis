@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
@@ -8,10 +10,12 @@ using Artemis.DAL;
 using Artemis.Services;
 using Artemis.Settings;
 using Artemis.Utilities.Memory;
+using Caliburn.Micro;
+using MahApps.Metro.Controls.Dialogs;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog;
-using Squirrel;
+using LogManager = NLog.LogManager;
 
 namespace Artemis.Utilities
 {
@@ -20,104 +24,130 @@ namespace Artemis.Utilities
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
-        ///     Uses Squirrel to update the application through GitHub
-        /// </summary>
-        public static async void UpdateApp()
-        {
-            var settings = SettingsProvider.Load<GeneralSettings>();
-            Logger.Info("Update check enabled: {0}", settings.AutoUpdate);
-
-            // Only update if the user allows it
-            if (!SettingsProvider.Load<GeneralSettings>().AutoUpdate)
-                return;
-            
-            // Pre-release
-            // using (var mgr = UpdateManager.GitHubUpdateManager("https://github.com/SpoinkyNL/Artemis", null, null, null, true))
-            // Release
-            using (var mgr = UpdateManager.GitHubUpdateManager("https://github.com/SpoinkyNL/Artemis"))
-            {
-                try
-                {
-                    await mgr.Result.UpdateApp();
-                    Logger.Info("Update check complete");
-                    mgr.Result.Dispose(); // This seems odd but if it's not disposed and exception is thrown
-                }
-                catch (Exception e)
-                {
-                    // These exceptions should only really occur when running from VS
-                    Logger.Error(e, "Update check failed");
-                }
-            }
-        }
-
-        /// <summary>
-        ///     Checks to see if the program has updated and shows a dialog if so.
+        ///     Checks to see if a new version is available on GitHub asks the user to see changes and download
         /// </summary>
         /// <param name="dialogService">The dialog service to use for progress and result dialogs</param>
         /// <returns></returns>
-        public static async void CheckChangelog(MetroDialogService dialogService)
+        public static async Task<bool?> CheckForUpdate(MetroDialogService dialogService)
         {
-            var settings = SettingsProvider.Load<GeneralSettings>();
-            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-            if ((settings.LastRanVersion != null) && (currentVersion > settings.LastRanVersion))
-            {
-                Logger.Info("Updated from {0} to {1}, showing changelog.", settings.LastRanVersion, currentVersion);
-
-                // Ask the user whether he/she wants to see what's new
-                var showChanges = await dialogService.
-                    ShowQuestionMessageBox("New version installed",
-                        $"Artemis has recently updated from version {settings.LastRanVersion} to {currentVersion}. \n" +
-                        "Would you like to see what's new?");
-
-                // If user wants to see changelog, show it to them
-                if ((showChanges != null) && showChanges.Value)
-                    await ShowChanges(dialogService, currentVersion);
-            }
-
-            settings.LastRanVersion = currentVersion;
-            settings.Save();
-        }
-
-        /// <summary>
-        ///     Fetches all releases from GitHub, looks up the current release and shows the changelog
-        /// </summary>
-        /// <param name="dialogService">The dialog service to use for progress and result dialogs</param>
-        /// <param name="version">The version to fetch the changelog for</param>
-        /// <returns></returns>
-        private static async Task ShowChanges(MetroDialogService dialogService, Version version)
-        {
-            var progressDialog = await dialogService.ShowProgressDialog("Changelog", "Fetching release data from GitHub..");
-            progressDialog.SetIndeterminate();
-
+            // Check GitHub for a new version
             var jsonClient = new WebClient();
 
             // GitHub trips if we don't add a user agent
-            jsonClient.Headers.Add("user-agent",
-                "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+            jsonClient.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
 
             // Random number to get around cache issues
             var rand = new Random(DateTime.Now.Millisecond);
-            var json = await jsonClient.DownloadStringTaskAsync(
-                "https://api.github.com/repos/SpoinkyNL/Artemis/releases?random=" + rand.Next());
-
-            // Get a list of releases
-            var releases = JsonConvert.DeserializeObject<JArray>(json);
-            var release = releases.FirstOrDefault(r => r["tag_name"].Value<string>() == version.ToString());
+            string json;
             try
             {
-                await progressDialog.CloseAsync();
+                json = await jsonClient.DownloadStringTaskAsync("https://api.github.com/repos/SpoinkyNL/Artemis/releases/latest?random=" + rand.Next());
             }
-            catch (InvalidOperationException)
+            catch (Exception e)
             {
-                // Occurs when main window is closed before finished
+                Logger.Warn(e, "Update check failed.");
+                return null;
             }
 
-            if (release != null)
-                dialogService.ShowMarkdownDialog(release["name"].Value<string>(), release["body"].Value<string>());
-            else
-                dialogService.ShowMessageBox("Couldn't fetch release",
-                    "Sorry, Artemis was unable to fetch the release data off of GitHub.\n" +
-                    "If you'd like, you can always find out the latest changes on the GitHub page accessible from the options menu");
+            var release = JObject.Parse(json);
+            var releaseVersion = Version.Parse(release["tag_name"].Value<string>());
+            var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
+            if (releaseVersion > currentVersion)
+            {
+                await Execute.OnUIThreadAsync(async () => await ShowChanges(dialogService, release));
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        ///     Shows the changes for the given release and offers to download it
+        /// </summary>
+        /// <param name="dialogService">The dialog service to use for progress and result dialogs</param>
+        /// <param name="release">The release to show and offer the download for</param>
+        /// <returns></returns>
+        private static async Task ShowChanges(MetroDialogService dialogService, JObject release)
+        {
+            var settings = new MetroDialogSettings
+            {
+                AffirmativeButtonText = "Download & install",
+                NegativeButtonText = "Ask again later"
+            };
+
+            var update = await dialogService.ShowMarkdownDialog(release["name"].Value<string>(), release["body"].Value<string>(), settings);
+            if (update == null || (bool) !update)
+                return;
+
+            // Show a process dialog 
+            var dialog = await dialogService.ShowProgressDialog("Applying update", "The new update is being downloaded right now...");
+            dialog.SetIndeterminate();
+            // Download the release file, it's the one starting with "artemis-setup"
+            var releaseFile = release["assets"].Children().FirstOrDefault(c => c["name"].Value<string>().StartsWith("artemis-setup") &&
+                                                                               c["name"].Value<string>().EndsWith(".msi"));
+            // If there's no matching release it means whoever published the new version fucked up, can't do much about that
+            if (releaseFile == null)
+            {
+                await dialog.CloseAsync();
+                dialogService.ShowMessageBox("Applying update failed", "Couldn't find the update file. Please install the latest version manually, sorry!");
+                return;
+            }
+
+            var downloadClient = new WebClient();
+            downloadClient.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
+            Task<byte[]> download;
+            try
+            {
+                download = downloadClient.DownloadDataTaskAsync(releaseFile["browser_download_url"].Value<string>());
+            }
+            catch (Exception e)
+            {
+                dialogService.ShowMessageBox("Applying update failed", "We ran into an issue downloaidng the update: \n\n" + e.Message);
+                Logger.Warn(e, "Update check failed.");
+                return;
+            }
+            downloadClient.DownloadProgressChanged += (sender, args) =>
+            {
+                dialog.SetMessage("The new update is being downloaded right now...\n\n" +
+                                  $"Progress: {ConvertBytesToMegabytes(args.BytesReceived)} MB/{ConvertBytesToMegabytes(args.TotalBytesToReceive)} MB");
+                dialog.SetProgress(args.ProgressPercentage / 100.0);
+            };
+            var setupBytes = await download;
+            dialog.SetMessage("Installing the new update...");
+            dialog.SetIndeterminate();
+
+            // Ensure the update folder exists
+            var artemisFolder = AppDomain.CurrentDomain.BaseDirectory.Substring(0, AppDomain.CurrentDomain.BaseDirectory.Length - 1);
+            var updateFolder = GeneralHelpers.DataFolder + "updates";
+            var updatePath = updateFolder + "\\" + releaseFile["name"].Value<string>();
+            if (!Directory.Exists(updateFolder))
+                Directory.CreateDirectory(updateFolder);
+
+            // Store the bytes
+            File.WriteAllBytes(updatePath, setupBytes);
+            // Create a bat file that'll take care of the installation (Artemis gets shut down during install) the bat file will
+            // carry forth our legacy (read that in an heroic tone)
+            var updateScript = "ECHO OFF\r\n" +
+                               "CLS\r\n" +
+                               $"\"{updatePath}\" /passive\r\n" +
+                               $"cd \"{artemisFolder}\"\r\n" +
+                               "start Artemis.exe --show";
+            File.WriteAllText(updateFolder + "\\updateScript.bat", updateScript);
+            var psi = new ProcessStartInfo
+            {
+                FileName = updateFolder + "\\updateScript.bat",
+                Verb = "runas"
+            };
+
+            var process = new System.Diagnostics.Process {StartInfo = psi};
+            process.Start();
+            process.WaitForExit();
+        }
+
+        private static object ConvertBytesToMegabytes(long bytes)
+        {
+            return Math.Round(bytes / 1024f / 1024f, 2);
         }
 
         /// <summary>
@@ -148,6 +178,8 @@ namespace Artemis.Utilities
                     offsetSettings.RocketLeague = pointers.FirstOrDefault(p => p.Game == "RocketLeague");
                 if (pointers.FirstOrDefault(p => p.Game == "WorldOfWarcraft") != null)
                     offsetSettings.WorldOfWarcraft = pointers.FirstOrDefault(p => p.Game == "WorldOfWarcraft");
+                if (pointers.FirstOrDefault(p => p.Game == "Terraria") != null)
+                    offsetSettings.Terraria = pointers.FirstOrDefault(p => p.Game == "Terraria");
 
                 offsetSettings.Save();
             }
@@ -158,6 +190,29 @@ namespace Artemis.Utilities
         }
 
         /// <summary>
+        ///     Removes the old Squirrel-based version of Artemis if present
+        /// </summary>
+        public static void CleanSquirrel()
+        {
+            var squirrelPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\Artemis";
+            if (!Directory.Exists(squirrelPath))
+                return;
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = squirrelPath + "\\Update.exe",
+                Arguments = "--uninstall",
+                Verb = "runas"
+            };
+
+            var process = new System.Diagnostics.Process {StartInfo = psi};
+            process.Start();
+            process.WaitForExit();
+
+            Directory.Delete(squirrelPath, true);
+        }
+
+        /// <summary>
         ///     JSON default value handling can only go so far, so the update will take care of defaults
         ///     on the offsets if they are null
         /// </summary>
@@ -165,6 +220,7 @@ namespace Artemis.Utilities
         {
             var offsetSettings = SettingsProvider.Load<OffsetSettings>();
             if (offsetSettings.RocketLeague == null)
+            {
                 offsetSettings.RocketLeague = new GamePointersCollection
                 {
                     Game = "RocketLeague",
@@ -179,6 +235,7 @@ namespace Artemis.Utilities
                         }
                     }
                 };
+            }
 
             offsetSettings.Save();
         }

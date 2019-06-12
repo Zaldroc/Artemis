@@ -104,7 +104,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\x64\Debug\</OutputPath>
+    <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x64</PlatformTarget>
@@ -113,7 +113,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <OutputPath>bin\x64\Release\</OutputPath>
+    <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -122,6 +122,8 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
@@ -131,52 +133,37 @@
     <TargetZone>LocalIntranet</TargetZone>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AssettoCorsaSharedMemory, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\AssettoCorsaSharedMemory.dll</HintPath>
+    </Reference>
     <Reference Include="Betwixt, Version=1.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Betwixt.1.4.1\lib\net35\Betwixt.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Caliburn.Micro, Version=3.0.3.0, Culture=neutral, PublicKeyToken=8e5891231f2ed21f, processorArchitecture=MSIL">
-      <HintPath>..\packages\Caliburn.Micro.Core.3.0.3\lib\net45\Caliburn.Micro.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Caliburn.Micro, Version=3.2.0.0, Culture=neutral, PublicKeyToken=8e5891231f2ed21f, processorArchitecture=MSIL">
+      <HintPath>..\packages\Caliburn.Micro.Core.3.2.0\lib\net45\Caliburn.Micro.dll</HintPath>
     </Reference>
-    <Reference Include="Caliburn.Micro.Platform, Version=3.0.3.0, Culture=neutral, PublicKeyToken=8e5891231f2ed21f, processorArchitecture=MSIL">
-      <HintPath>..\packages\Caliburn.Micro.3.0.3\lib\net45\Caliburn.Micro.Platform.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Caliburn.Micro.Platform, Version=3.2.0.0, Culture=neutral, PublicKeyToken=8e5891231f2ed21f, processorArchitecture=MSIL">
+      <HintPath>..\packages\Caliburn.Micro.3.2.0\lib\net45\Caliburn.Micro.Platform.dll</HintPath>
     </Reference>
-    <Reference Include="Caliburn.Micro.Platform.Core, Version=3.0.3.0, Culture=neutral, PublicKeyToken=8e5891231f2ed21f, processorArchitecture=MSIL">
-      <HintPath>..\packages\Caliburn.Micro.3.0.3\lib\net45\Caliburn.Micro.Platform.Core.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Caliburn.Micro.Platform.Core, Version=3.2.0.0, Culture=neutral, PublicKeyToken=8e5891231f2ed21f, processorArchitecture=MSIL">
+      <HintPath>..\packages\Caliburn.Micro.3.2.0\lib\net45\Caliburn.Micro.Platform.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Castle.Core, Version=3.3.0.0, Culture=neutral, PublicKeyToken=407dd0808d44fbdc, processorArchitecture=MSIL">
-      <HintPath>..\packages\Castle.Core.3.3.3\lib\net45\Castle.Core.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Corale.Colore, Version=5.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Colore.5.2.0\lib\net35\Corale.Colore.dll</HintPath>
     </Reference>
-    <Reference Include="Corale.Colore, Version=5.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Colore.5.1.0\lib\net35\Corale.Colore.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="CSCore, Version=1.2.1.2, Culture=neutral, PublicKeyToken=5a08f2b6f4415dea, processorArchitecture=MSIL">
+      <HintPath>..\packages\CSCore.1.2.1.2\lib\net35-client\CSCore.dll</HintPath>
     </Reference>
-    <Reference Include="CSCore, Version=1.1.5992.18249, Culture=neutral, PublicKeyToken=5a08f2b6f4415dea, processorArchitecture=MSIL">
-      <HintPath>..\packages\CSCore.1.1.0\lib\net35-client\CSCore.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="CUE.NET, Version=1.2.0.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\CUE.NET.1.2.0.1\lib\net45\CUE.NET.dll</HintPath>
     </Reference>
-    <Reference Include="CUE.NET, Version=1.1.2.1, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\CUE.NET.1.1.2.1\lib\net45\CUE.NET.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="DynamicExpresso.Core, Version=1.3.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamicExpresso.Core.1.3.4.7\lib\net40\DynamicExpresso.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DeltaCompressionDotNet, Version=1.1.0.0, Culture=neutral, PublicKeyToken=1d14d6e5194e7f4a, processorArchitecture=MSIL">
-      <HintPath>..\packages\DeltaCompressionDotNet.1.1.0\lib\net20\DeltaCompressionDotNet.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="DeltaCompressionDotNet.MsDelta, Version=1.1.0.0, Culture=neutral, PublicKeyToken=46b2138a390abf55, processorArchitecture=MSIL">
-      <HintPath>..\packages\DeltaCompressionDotNet.1.1.0\lib\net20\DeltaCompressionDotNet.MsDelta.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="DeltaCompressionDotNet.PatchApi, Version=1.1.0.0, Culture=neutral, PublicKeyToken=3e8888ee913ed789, processorArchitecture=MSIL">
-      <HintPath>..\packages\DeltaCompressionDotNet.1.1.0\lib\net20\DeltaCompressionDotNet.PatchApi.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="DynamicExpresso.Core, Version=1.3.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamicExpresso.Core.1.3.3.5\lib\net40\DynamicExpresso.Core.dll</HintPath>
+    <Reference Include="Gma.System.MouseKeyHook, Version=5.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MouseKeyHook.5.4.0\lib\net40\Gma.System.MouseKeyHook.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="GongSolutions.Wpf.DragDrop, Version=0.1.4.3, Culture=neutral, PublicKeyToken=d19974ea350ccea1, processorArchitecture=MSIL">
@@ -187,41 +174,19 @@
       <HintPath>..\packages\Hardcodet.NotifyIcon.Wpf.1.0.8\lib\net451\Hardcodet.Wpf.TaskbarNotification.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\squirrel.windows.1.4.4\lib\Net45\ICSharpCode.SharpZipLib.dll</HintPath>
+    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="log4net, Version=2.0.7.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
-      <HintPath>..\packages\log4net.2.0.7\lib\net45-full\log4net.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="MahApps.Metro, Version=1.4.1.0, Culture=neutral, PublicKeyToken=f4fb5a3c4d1e5b4f, processorArchitecture=MSIL">
-      <HintPath>..\packages\MahApps.Metro.1.4.1\lib\net45\MahApps.Metro.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\packages\Mono.Cecil.0.9.6.4\lib\net45\Mono.Cecil.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Mdb, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\packages\Mono.Cecil.0.9.6.4\lib\net45\Mono.Cecil.Mdb.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Pdb, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\packages\Mono.Cecil.0.9.6.4\lib\net45\Mono.Cecil.Pdb.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Mono.Cecil.Rocks, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
-      <HintPath>..\packages\Mono.Cecil.0.9.6.4\lib\net45\Mono.Cecil.Rocks.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="MahApps.Metro, Version=1.4.3.0, Culture=neutral, PublicKeyToken=f4fb5a3c4d1e5b4f, processorArchitecture=MSIL">
+      <HintPath>..\packages\MahApps.Metro.1.4.3\lib\net45\MahApps.Metro.dll</HintPath>
     </Reference>
     <Reference Include="MoonSharp.Interpreter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=921e73ce94aa17f8, processorArchitecture=MSIL">
       <HintPath>..\packages\MoonSharp.2.0.0.0\lib\net40-client\MoonSharp.Interpreter.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Ninject, Version=3.2.0.0, Culture=neutral, PublicKeyToken=c7192dc5380945e7, processorArchitecture=MSIL">
       <HintPath>..\packages\Ninject.3.2.2.0\lib\net45-full\Ninject.dll</HintPath>
@@ -240,40 +205,32 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.4.4.1\lib\net45\NLog.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\NLog.4.4.12\lib\net45\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="NuGet.Squirrel, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\squirrel.windows.1.4.4\lib\Net45\NuGet.Squirrel.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="PcapDotNet.Base, Version=1.0.4.25027, Culture=neutral, PublicKeyToken=06a20bc2fabb1931, processorArchitecture=MSIL">
+      <HintPath>..\packages\Pcap.Net.x64.1.0.4.1\lib\net45\PcapDotNet.Base.dll</HintPath>
     </Reference>
-    <Reference Include="Open.WinKeyboardHook, Version=1.0.11.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Open.WinKeyboardHook.1.0.11\lib\net45\Open.WinKeyboardHook.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="PcapDotNet.Core, Version=1.0.4.25149, Culture=neutral, PublicKeyToken=06a20bc2fabb1931, processorArchitecture=AMD64">
+      <HintPath>..\packages\Pcap.Net.x64.1.0.4.1\lib\net45\PcapDotNet.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="PcapDotNet.Core.Extensions, Version=1.0.4.25151, Culture=neutral, PublicKeyToken=06a20bc2fabb1931, processorArchitecture=AMD64">
+      <HintPath>..\packages\Pcap.Net.x64.1.0.4.1\lib\net45\PcapDotNet.Core.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="PcapDotNet.Packets, Version=1.0.4.25028, Culture=neutral, PublicKeyToken=06a20bc2fabb1931, processorArchitecture=MSIL">
+      <HintPath>..\packages\Pcap.Net.x64.1.0.4.1\lib\net45\PcapDotNet.Packets.dll</HintPath>
     </Reference>
     <Reference Include="Process.NET, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Process.NET.1.0.8\lib\Process.NET.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="SharpDX, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.3.1.1\lib\net45\SharpDX.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="SharpDX, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpDX.4.0.1\lib\net45\SharpDX.dll</HintPath>
     </Reference>
-    <Reference Include="SharpDX.Direct3D9, Version=3.1.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
-      <HintPath>..\packages\SharpDX.Direct3D9.3.1.1\lib\net45\SharpDX.Direct3D9.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Splat, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Splat.2.0.0\lib\Net45\Splat.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="SharpDX.Direct3D9, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b4dcf0f35e5521f1, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpDX.Direct3D9.4.0.1\lib\net45\SharpDX.Direct3D9.dll</HintPath>
     </Reference>
     <Reference Include="SpotifyAPI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpotifyAPI-NET.2.12.0\lib\SpotifyAPI.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Squirrel, Version=1.4.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\squirrel.windows.1.4.4\lib\Net45\Squirrel.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\SpotifyAPI-NET.2.17.0\lib\SpotifyAPI.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
@@ -286,8 +243,7 @@
     <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\MahApps.Metro.1.4.1\lib\net45\System.Windows.Interactivity.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\packages\Caliburn.Micro.3.2.0\lib\net45\System.Windows.Interactivity.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -324,16 +280,23 @@
     <Compile Include="DAL\SettingsProvider.cs" />
     <Compile Include="DeviceProviders\Artemis\NoneKeyboard.cs" />
     <Compile Include="DeviceProviders\CoolerMaster\MasterkeysProL.cs" />
+    <Compile Include="DeviceProviders\CoolerMaster\MasterkeysProM.cs" />
     <Compile Include="DeviceProviders\CoolerMaster\MasterkeysProS.cs" />
+    <Compile Include="DeviceProviders\CoolerMaster\MastermouseProL.cs" />
+    <Compile Include="DeviceProviders\CoolerMaster\MastermouseProS.cs" />
     <Compile Include="DeviceProviders\CoolerMaster\Utilities\CmSdk.cs" />
+    <Compile Include="DeviceProviders\Corsair\CorsairGeneric.cs" />
     <Compile Include="DeviceProviders\Corsair\CorsairMouse.cs" />
     <Compile Include="DeviceProviders\Corsair\CorsairHeadset.cs" />
     <Compile Include="DeviceProviders\Corsair\CorsairMousemat.cs" />
-    <Compile Include="DeviceProviders\Corsair\Utilities\KeyMap.cs" />
+    <Compile Include="DeviceProviders\Corsair\Utilities\CorsairUtilities.cs" />
     <Compile Include="DeviceProviders\DeviceProvider.cs" />
     <Compile Include="DeviceProviders\Logitech\G810.cs" />
     <Compile Include="DeviceProviders\Logitech\LogitechGeneric.cs" />
     <Compile Include="DeviceProviders\Logitech\LogitechKeyboard.cs" />
+    <Compile Include="DeviceProviders\Razer\Firefly.cs" />
+    <Compile Include="DeviceProviders\Razer\Mamba.cs" />
+    <Compile Include="DeviceProviders\Logitech\Utilities\KeyMapG810.cs" />
     <Compile Include="Dialogs\MarkdownDialog.xaml.cs">
       <DependentUpon>MarkdownDialog.xaml</DependentUpon>
     </Compile>
@@ -348,12 +311,12 @@
     <Compile Include="DeviceProviders\Corsair\CorsairKeyboard.cs" />
     <Compile Include="DeviceProviders\KeyboardProvider.cs" />
     <Compile Include="DeviceProviders\Logitech\G910.cs" />
-    <Compile Include="DeviceProviders\Logitech\Utilities\KeyboardNames.cs" />
     <Compile Include="DeviceProviders\Logitech\Utilities\KeyMap.cs" />
     <Compile Include="DeviceProviders\Logitech\Utilities\LogitechGSDK.cs" />
     <Compile Include="DeviceProviders\Logitech\Utilities\OrionUtilities.cs" />
     <Compile Include="DeviceProviders\Razer\BlackWidow.cs" />
     <Compile Include="DeviceProviders\Razer\Utilities\RazerUtilities.cs" />
+    <Compile Include="Managers\KeybindManager.cs" />
     <Compile Include="Models\DeviceVisualModel.cs" />
     <Compile Include="Models\FrameModel.cs" />
     <Compile Include="Managers\MigrationManager.cs" />
@@ -363,12 +326,41 @@
     <Compile Include="Managers\LuaManager.cs" />
     <Compile Include="Managers\MainManager.cs" />
     <Compile Include="Managers\PreviewManager.cs" />
+    <Compile Include="Models\KeybindModel.cs" />
     <Compile Include="Models\LayerEditorModel.cs" />
     <Compile Include="Models\ProfileEditorModel.cs" />
     <Compile Include="Modules\Abstract\ModuleDataModel.cs" />
     <Compile Include="Modules\Abstract\ModuleModel.cs" />
     <Compile Include="Modules\Abstract\ModuleSettings.cs" />
     <Compile Include="Modules\Abstract\ModuleViewModel.cs" />
+    <Compile Include="Modules\Games\AssettoCorsa\AssettoCorsaDataModel.cs" />
+    <Compile Include="Modules\Games\AssettoCorsa\AssettoCorsaModel.cs" />
+    <Compile Include="Modules\Games\AssettoCorsa\AssettoCorsaSettings.cs" />
+    <Compile Include="Modules\Games\AssettoCorsa\AssettoCorsaView.xaml.cs">
+      <DependentUpon>AssettoCorsaView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\Games\AssettoCorsa\AssettoCorsaViewModel.cs" />
+    <Compile Include="Modules\Games\FormulaOne2017\FormulaOne2017Model.cs" />
+    <Compile Include="Modules\Games\FormulaOne2017\FormulaOne2017Settings.cs" />
+    <Compile Include="Modules\Games\FormulaOne2017\FormulaOne2017View.xaml.cs">
+      <DependentUpon>FormulaOne2017View.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\Games\FormulaOne2017\FormulaOne2017ViewModel.cs" />
+    <Compile Include="Modules\Games\FormulaOne2017\FormulaOne2017DataModel.cs" />
+    <Compile Include="Modules\Games\Terraria\TerrariaDataModel.cs" />
+    <Compile Include="Modules\Games\Terraria\TerrariaSettings.cs" />
+    <Compile Include="Modules\Games\Terraria\TerrariaModel.cs" />
+    <Compile Include="Modules\Games\Terraria\TerrariaView.xaml.cs">
+      <DependentUpon>TerrariaView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Modules\Games\Terraria\TerrariaViewModel.cs" />
+    <Compile Include="Modules\Games\WoW\Models\WoWAura.cs" />
+    <Compile Include="Modules\Games\WoW\Models\WoWCastBar.cs" />
+    <Compile Include="Modules\Games\WoW\Models\WoWEnums.cs" />
+    <Compile Include="Modules\Games\WoW\Models\WoWSpecialization.cs" />
+    <Compile Include="Modules\Games\WoW\Models\WoWSpell.cs" />
+    <Compile Include="Modules\Games\WoW\Models\WoWUnit.cs" />
+    <Compile Include="Modules\Games\WoW\WoWPacketScanner.cs" />
     <Compile Include="Modules\General\GeneralProfile\PerformanceInfo.cs" />
     <Compile Include="Modules\Games\EurotruckSimulator2\Data\Ets2TelemetryData.cs" />
     <Compile Include="Modules\Games\EurotruckSimulator2\Data\Ets2TelemetryDataReader.cs" />
@@ -448,15 +440,6 @@
       <DependentUpon>UnrealTournamentView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Modules\Games\UnrealTournament\UnrealTournamentViewModel.cs" />
-    <Compile Include="Modules\Games\WoW\Data\Int128.cs" />
-    <Compile Include="Modules\Games\WoW\Data\WoWEnums.cs" />
-    <Compile Include="Modules\Games\WoW\Data\WoWOffsets.cs" />
-    <Compile Include="Modules\Games\WoW\Data\WoWStructs.cs" />
-    <Compile Include="Modules\Games\WoW\Data\WoWNameCache.cs" />
-    <Compile Include="Modules\Games\WoW\Data\WoWObjectManager.cs" />
-    <Compile Include="Modules\Games\WoW\Data\WoWObject.cs" />
-    <Compile Include="Modules\Games\WoW\Data\WoWPlayer.cs" />
-    <Compile Include="Modules\Games\WoW\Data\WoWUnit.cs" />
     <Compile Include="Modules\Games\WoW\WoWView.xaml.cs">
       <DependentUpon>WoWView.xaml</DependentUpon>
     </Compile>
@@ -464,7 +447,6 @@
     <Compile Include="Modules\Games\WoW\WoWModel.cs" />
     <Compile Include="Modules\Games\WoW\WoWSettings.cs" />
     <Compile Include="Modules\Games\WoW\WoWViewModel.cs" />
-    <Compile Include="Modules\Games\WoW\WoWAddresses.cs" />
     <Compile Include="Modules\Overlays\OverlayProfile\OverlayProfileDataModel.cs" />
     <Compile Include="Modules\Overlays\OverlayProfile\OverlayProfileModel.cs" />
     <Compile Include="Modules\Overlays\OverlayProfile\OverlayProfileSettings.cs" />
@@ -472,9 +454,13 @@
       <DependentUpon>OverlayProfileView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Modules\Overlays\OverlayProfile\OverlayProfileViewModel.cs" />
+    <Compile Include="Profiles\Layers\Animations\RotateCounterclockwiseAnimation.cs" />
+    <Compile Include="Profiles\Layers\Animations\RotateClockwiseAnimation.cs" />
+    <Compile Include="Profiles\Layers\Animations\ShrinkAnimation.cs" />
     <Compile Include="Profiles\Layers\Animations\NoneAnimation.cs" />
     <Compile Include="Profiles\Layers\Models\EventPropertiesModel.cs" />
     <Compile Include="Profiles\Layers\Models\KeyboardEventPropertiesModel.cs" />
+    <Compile Include="Profiles\Layers\Models\LayerKeybindModel.cs" />
     <Compile Include="Profiles\Layers\Models\TweenModel.cs" />
     <Compile Include="Profiles\Layers\Types\AmbientLight\AmbienceCreator\AmbienceCreatorExtend.cs" />
     <Compile Include="Profiles\Layers\Types\AmbientLight\AmbienceCreator\AmbienceCreatorMirror.cs" />
@@ -486,7 +472,7 @@
     </Compile>
     <Compile Include="Profiles\Layers\Types\AmbientLight\AmbientLightPropertiesViewModel.cs" />
     <Compile Include="Profiles\Layers\Types\AmbientLight\AmbientLightType.cs" />
-    <Compile Include="Profiles\Layers\Types\AmbientLight\Helper\CheckboxEnumFlagHelper.cs" />
+    <Compile Include="Profiles\Layers\Types\AmbientLight\Helper\ToggleSwitchButtonEnumFlagHelper.cs" />
     <Compile Include="Profiles\Layers\Types\AmbientLight\Model\AmbienceCreatorType.cs" />
     <Compile Include="Profiles\Layers\Types\AmbientLight\Model\BlackBarDetectionMode.cs" />
     <Compile Include="Profiles\Layers\Types\AmbientLight\Model\Extensions\AvgColorExtension.cs" />
@@ -542,14 +528,28 @@
     <Compile Include="Profiles\Lua\Modules\Events\LuaKeyPressEventArgs.cs" />
     <Compile Include="Profiles\Lua\Modules\Events\LuaDeviceDrawingEventArgs.cs" />
     <Compile Include="Profiles\Lua\Modules\Events\LuaDeviceUpdatingEventArgs.cs" />
+    <Compile Include="Profiles\Lua\Modules\Gui\EditorButton.cs" />
+    <Compile Include="Profiles\Lua\Modules\Gui\LuaButton.cs" />
+    <Compile Include="Profiles\Lua\Modules\Gui\LuaCheckBox.cs" />
+    <Compile Include="Profiles\Lua\Modules\Gui\LuaComboBox.cs" />
+    <Compile Include="Profiles\Lua\Modules\Gui\LuaLabel.cs" />
+    <Compile Include="Profiles\Lua\Modules\Gui\LuaSlider.cs" />
+    <Compile Include="Profiles\Lua\Modules\Gui\LuaTextBox.cs" />
+    <Compile Include="Profiles\Lua\Modules\Gui\LuaWindowView.xaml.cs">
+      <DependentUpon>LuaWindowView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Profiles\Lua\Modules\Gui\LuaWindowViewModel.cs" />
     <Compile Include="Profiles\Lua\Modules\LuaEventsModule.cs" />
     <Compile Include="Profiles\Lua\Modules\LuaBrushesModule.cs" />
     <Compile Include="Profiles\Lua\LuaModule.cs" />
     <Compile Include="Profiles\Lua\Modules\Brushes\LuaSolidColorBrush.cs" />
+    <Compile Include="Profiles\Lua\Modules\LuaGuiModule.cs" />
+    <Compile Include="Profiles\Lua\Modules\LuaKeybindModule.cs" />
     <Compile Include="Profiles\Lua\Modules\LuaKeyboardModule.cs" />
     <Compile Include="Profiles\Lua\Modules\LuaLayerModule.cs" />
     <Compile Include="Profiles\Lua\Modules\LuaMouseModule.cs" />
     <Compile Include="Profiles\Lua\Modules\LuaProfileModule.cs" />
+    <Compile Include="Profiles\Lua\Modules\LuaStorageModule.cs" />
     <Compile Include="Profiles\Lua\Modules\Timer\LuaTimer.cs" />
     <Compile Include="Profiles\Lua\Modules\LuaTimerModule.cs" />
     <Compile Include="Profiles\Lua\Wrappers\LuaDrawWrapper.cs" />
@@ -608,7 +608,7 @@
     <Compile Include="Profiles\Layers\Conditions\DataModelCondition.cs" />
     <Compile Include="Profiles\Layers\Conditions\EventCondition.cs" />
     <Compile Include="Profiles\Layers\Interfaces\ILayerAnimation.cs" />
-    <Compile Include="Profiles\Layers\Interfaces\ILayerCondition.cs" />
+    <Compile Include="Profiles\Layers\Abstract\LayerCondition.cs" />
     <Compile Include="Profiles\Layers\Interfaces\ILayerType.cs" />
     <Compile Include="Profiles\Layers\Models\DynamicPropertiesModel.cs" />
     <Compile Include="Profiles\Layers\Models\LayerConditionModel.cs" />
@@ -625,6 +625,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Services\CompatibilityService.cs" />
     <Compile Include="Services\DialogService.cs" />
     <Compile Include="Services\MetroDialogService.cs" />
     <Compile Include="Services\WindowService.cs" />
@@ -633,20 +634,23 @@
     <Compile Include="Settings\OffsetSettings.cs" />
     <Compile Include="Styles\DropTargetAdorners\DropTargetMetroHighlightAdorner.cs" />
     <Compile Include="Styles\DropTargetAdorners\DropTargetMetroInsertionAdorner.cs" />
-    <Compile Include="Utilities\ActiveWindowHelper.cs" />
+    <Compile Include="Utilities\ActiveWindowDetection\ActiveWindowDetectionType.cs" />
+    <Compile Include="Utilities\ActiveWindowDetection\ActiveWindowHelper.cs" />
+    <Compile Include="Utilities\ActiveWindowDetection\EventActiveWindowDetector.cs" />
+    <Compile Include="Utilities\ActiveWindowDetection\IActiveWindowDetector.cs" />
+    <Compile Include="Utilities\ActiveWindowDetection\TimerActiveWindowDetector.cs" />
     <Compile Include="Utilities\ColorHelpers.cs" />
     <Compile Include="Utilities\Converters\JsonConverters.cs" />
     <Compile Include="Utilities\Converters\NinjectCustomConverter.cs" />
     <Compile Include="Utilities\Converters\ValueConverters.cs" />
     <Compile Include="Utilities\DataReaders\DllManager.cs" />
-    <Compile Include="Utilities\EditorHelper.cs" />
     <Compile Include="Utilities\ExtensionMethods.cs" />
     <Compile Include="Utilities\GameState\GameDataReceivedEventArgs.cs" />
     <Compile Include="Utilities\GameState\GameStateWebServer.cs" />
     <Compile Include="Utilities\GeneralHelpers.cs" />
     <Compile Include="Utilities\GifImage.cs" />
     <Compile Include="Utilities\ImageUtilities.cs" />
-    <Compile Include="Utilities\Keyboard\KeyboardHook.cs" />
+    <Compile Include="Utilities\InputHook.cs" />
     <Compile Include="Utilities\Logging.cs" />
     <Compile Include="Utilities\DataReaders\PipeServer.cs" />
     <Compile Include="Utilities\Markdown\Markdown.cs" />
@@ -669,6 +673,7 @@
     <Compile Include="Modules\Games\Dota2\Dota2ViewModel.cs" />
     <Compile Include="Modules\Games\RocketLeague\RocketLeagueViewModel.cs" />
     <Compile Include="Modules\Games\Witcher3\Witcher3ViewModel.cs" />
+    <Compile Include="ViewModels\Profiles\LayerKeybindViewModel.cs" />
     <Compile Include="ViewModels\Profiles\LayerTweenViewModel.cs" />
     <Compile Include="ViewModels\Profiles\Events\EventPropertiesViewModel.cs" />
     <Compile Include="Profiles\Layers\Types\Keyboard\KeyboardPropertiesViewModel.cs" />
@@ -719,6 +724,9 @@
     <Compile Include="Profiles\Layers\Types\Keyboard\KeyboardPropertiesView.xaml.cs">
       <DependentUpon>KeyboardPropertiesView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Views\Profiles\LayerKeybindView.xaml.cs">
+      <DependentUpon>LayerKeybindView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Views\Profiles\LayerConditionView.xaml.cs">
       <DependentUpon>LayerConditionView.xaml</DependentUpon>
     </Compile>
@@ -754,9 +762,22 @@
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Resource Include="Resources\Keyboards\masterkeys-pro-m.png" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Artemis.toc" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Core.lua" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceAddon-3.0\AceAddon-3.0.lua" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceComm-3.0\AceComm-3.0.lua" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceComm-3.0\ChatThrottleLib.lua" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceConsole-3.0\AceConsole-3.0.lua" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceEvent-3.0\AceEvent-3.0.lua" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceTimer-3.0\AceTimer-3.0.lua" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\json.lua" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\LibStub\LibStub.lua" />
+    <None Include="Modules\Games\WoW\Resources\wow-addon.zip" />
     <None Include="NLog.xsd">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Resources\Keyboards\k95-platinum.png" />
     <None Include="Resources\Keyboards\masterkeys-pro-s.png" />
     <None Include="Resources\Keyboards\masterkeys-pro-l.png" />
     <Resource Include="Resources\Kottke Silkscreen License.txt" />
@@ -781,10 +802,10 @@
     <AppDesigner Include="Properties\" />
     <Resource Include="Resources\slkscr.ttf" />
     <Resource Include="Resources\bow.png" />
-    <Content Include="lib\CUE.NET.dll" />
+    <Content Include="lib\AssettoCorsaSharedMemory.dll" />
     <Content Include="lib\Ets2SdkClient.dll" />
     <Content Include="lib\SDKDLL.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="LogitechLedEnginesWrapper.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -825,6 +846,18 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Dialogs\MarkdownDialog.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Modules\Games\AssettoCorsa\AssettoCorsaView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Modules\Games\FormulaOne2017\FormulaOne2017View.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="Modules\Games\Terraria\TerrariaView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -896,6 +929,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Page Include="Profiles\Lua\Modules\Gui\LuaWindowView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Resources\Icons.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -964,6 +1001,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\Profiles\LayerKeybindView.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="Views\Profiles\LayerConditionView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -1011,6 +1052,15 @@
     <None Include="Modules\Games\EurotruckSimulator2\Resources\Win64\ets2-telemetry-server.dll" />
     <None Include="Resources\audio.png" />
     <None Include="Resources\ambilight.png" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\embeds.xml" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceAddon-3.0\AceAddon-3.0.xml" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceComm-3.0\AceComm-3.0.xml" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceConsole-3.0\AceConsole-3.0.xml" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceEvent-3.0\AceEvent-3.0.xml" />
+    <None Include="Modules\Games\WoW\Resources\Addon source\Libs\AceTimer-3.0\AceTimer-3.0.xml" />
+    <Resource Include="Resources\Artemis autorun.xml">
+      <SubType>Designer</SubType>
+    </Resource>
     <Content Include="Resources\CounterStrike\csgoGamestateConfiguration.txt" />
   </ItemGroup>
   <ItemGroup>
@@ -1032,15 +1082,24 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Modules\General\GeneralProfile\Discord\" />
     <Folder Include="Resources\Lua\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="..\packages\CUE.NET.1.1.2.1\build\net45\CUE.NET.targets" Condition="Exists('..\packages\CUE.NET.1.1.2.1\build\net45\CUE.NET.targets')" />
+  <PropertyGroup>
+    <PostBuildEvent>if $(ConfigurationName) == Release (
+  attrib +r Artemis.pdb
+  del *.pdb
+  attrib -r Artemis.pdb
+  echo Access denied is intended, see post build event
+)</PostBuildEvent>
+  </PropertyGroup>
+  <Import Project="..\packages\CUE.NET.1.2.0.1\build\net45\CUE.NET.targets" Condition="Exists('..\packages\CUE.NET.1.2.0.1\build\net45\CUE.NET.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\CUE.NET.1.1.2.1\build\net45\CUE.NET.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\CUE.NET.1.1.2.1\build\net45\CUE.NET.targets'))" />
+    <Error Condition="!Exists('..\packages\CUE.NET.1.2.0.1\build\net45\CUE.NET.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\CUE.NET.1.2.0.1\build\net45\CUE.NET.targets'))" />
   </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

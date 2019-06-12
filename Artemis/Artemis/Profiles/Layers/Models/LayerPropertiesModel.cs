@@ -25,6 +25,7 @@ namespace Artemis.Profiles.Layers.Models
             Opacity = source.Opacity;
             AnimationSpeed = source.AnimationSpeed;
             Conditions = source.Conditions;
+            LayerKeybindModels = source.LayerKeybindModels;
             ConditionType = source.ConditionType;
             DynamicProperties = source.DynamicProperties;
             Brush = source.Brush;
@@ -41,7 +42,6 @@ namespace Artemis.Profiles.Layers.Models
         public double Width { get; set; }
         public double Height { get; set; }
         public bool Contain { get; set; }
-        public double Opacity { get; set; }
         public double AnimationSpeed { get; set; }
         public double OpacityEaseTime { get; set; }
         public double HeightEaseTime { get; set; }
@@ -51,7 +51,12 @@ namespace Artemis.Profiles.Layers.Models
         public string OpacityEase { get; set; }
         public ConditionType ConditionType { get; set; }
         public List<LayerConditionModel> Conditions { get; set; } = new List<LayerConditionModel>();
+        public List<LayerKeybindModel> LayerKeybindModels { get; set; } = new List<LayerKeybindModel>();
         public List<DynamicPropertiesModel> DynamicProperties { get; set; } = new List<DynamicPropertiesModel>();
+
+        // Opacity isn't saved since it's only accesable by LUA
+        [JsonIgnore]
+        public double Opacity { get; set; } = 1;
 
         [JsonConverter(typeof(BrushJsonConverter))]
         public Brush Brush

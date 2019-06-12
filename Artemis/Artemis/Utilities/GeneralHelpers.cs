@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using static System.String;
@@ -12,6 +13,29 @@ namespace Artemis.Utilities
 {
     public static class GeneralHelpers
     {
+        public static string DataFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\Artemis\\";
+
+        public static void SetupDataFolder()
+        {
+            if (!Directory.Exists(DataFolder))
+                Directory.CreateDirectory(DataFolder);
+
+            var oldDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\Artemis\\";
+
+            try
+            {
+                if (!Directory.Exists(oldDataFolder))
+                    return;
+
+                // Migrate the old Artemis folder if it's present and access to it can be gained
+                MoveDirectory(oldDataFolder, DataFolder);
+            }
+            catch (Exception)
+            {
+                // ignored, could be blocked, in that case tough luck!
+            }
+        }
+
         /// <summary>
         ///     Perform a deep Copy of the object, using Json as a serialisation method.
         /// </summary>
@@ -40,10 +64,12 @@ namespace Artemis.Utilities
             return GetPropertyValue(value, path.Replace(propertyNames[0] + ".", ""));
         }
 
-        public static List<PropertyCollection> GenerateTypeMap(object o) => GenerateTypeMap(o.GetType().GetProperties());
+        public static List<PropertyCollection> GenerateTypeMap(object o)
+        {
+            return GenerateTypeMap(o.GetType().GetProperties());
+        }
 
-        private static List<PropertyCollection> GenerateTypeMap(IEnumerable<PropertyInfo> getProperties,
-            string path = "")
+        private static List<PropertyCollection> GenerateTypeMap(IEnumerable<PropertyInfo> getProperties, string path = "", bool inList = false)
         {
             var list = new List<PropertyCollection>();
             foreach (var propInfo in getProperties)
@@ -60,13 +86,24 @@ namespace Artemis.Utilities
                 if (propInfo.PropertyType.BaseType?.Name == "Enum")
                     friendlyName = "(Choice)";
 
-                var parent = new PropertyCollection
-                {
-                    Type = propInfo.PropertyType.Name,
-                    DisplayType = friendlyName,
-                    Display = $"{path.Replace(".", " → ")}{propInfo.Name}",
-                    Path = $"{path}{propInfo.Name}"
-                };
+                // At this point the loop is in the item type contained in the list
+                PropertyCollection parent;
+                if (path.Contains("Item") && inList)
+                    parent = new PropertyCollection
+                    {
+                        Type = propInfo.PropertyType.Name,
+                        DisplayType = friendlyName,
+                        Display = $"{path.Replace("Item.", "").Replace(".", " → ")}{propInfo.Name}",
+                        Path = $"{path.Replace("Item.", "")}{propInfo.Name}"
+                    };
+                else
+                    parent = new PropertyCollection
+                    {
+                        Type = propInfo.PropertyType.Name,
+                        DisplayType = friendlyName,
+                        Display = $"{path.Replace(".", " → ")}{propInfo.Name}",
+                        Path = $"{path}{propInfo.Name}"
+                    };
 
                 if (propInfo.PropertyType.BaseType?.Name == "Enum")
                 {
@@ -78,10 +115,19 @@ namespace Artemis.Utilities
                     list.Add(parent);
 
                 // Don't go into Strings, DateTimes or anything with JsonIgnore on it
-                if (propInfo.PropertyType.Name != "String" && 
+                if (propInfo.PropertyType.Name != "String" &&
                     propInfo.PropertyType.Name != "DateTime" &&
                     propInfo.CustomAttributes.All(a => a.AttributeType != typeof(JsonIgnoreAttribute)))
-                    list.AddRange(GenerateTypeMap(propInfo.PropertyType.GetProperties(), path + $"{propInfo.Name}."));
+                {
+                    var newPath = $"{path}{propInfo.Name}.";
+                    var toInList = propInfo.PropertyType.Name == "List`1";
+                    if (toInList)
+                    {
+                        inList = true;
+                        newPath = $"({path}{propInfo.Name}).";
+                    }
+                    list.AddRange(GenerateTypeMap(propInfo.PropertyType.GetProperties(), newPath, inList));
+                }
             }
             return list;
         }
@@ -110,6 +156,42 @@ namespace Artemis.Utilities
                     return Path.GetDirectoryName(library + relativePath);
             }
             return null;
+        }
+
+        public static void ExecuteSta(Action action)
+        {
+            var thread = new Thread(action.Invoke);
+            thread.SetApartmentState(ApartmentState.STA); //Set the thread to STA
+            thread.Start();
+            thread.Join();
+        }
+
+        public static T ParseEnum<T>(string value, bool ignoreCase = true, bool stripWhitespaces = true)
+        {
+            if (stripWhitespaces)
+                value = value.Replace(" ", "");
+            return (T) Enum.Parse(typeof(T), value, true);
+        }
+
+        public static void MoveDirectory(string source, string target)
+        {
+            var sourcePath = source.TrimEnd('\\', ' ');
+            var targetPath = target.TrimEnd('\\', ' ');
+            var files = Directory.EnumerateFiles(sourcePath, "*", SearchOption.AllDirectories).GroupBy(Path.GetDirectoryName);
+            foreach (var folder in files)
+            {
+                var targetFolder = folder.Key.Replace(sourcePath, targetPath);
+                Directory.CreateDirectory(targetFolder);
+                foreach (var file in folder)
+                {
+                    var fileName = Path.GetFileName(file);
+                    if (fileName == null) continue;
+                    var targetFile = Path.Combine(targetFolder, fileName);
+                    if (File.Exists(targetFile)) File.Delete(targetFile);
+                    File.Move(file, targetFile);
+                }
+            }
+            Directory.Delete(source, true);
         }
 
         public struct PropertyCollection

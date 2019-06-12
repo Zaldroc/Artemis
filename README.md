@@ -1,6 +1,7 @@
 # Artemis
 [![GitHub release](https://img.shields.io/github/release/spoinkynl/Artemis.svg)]()
 [![Github All Releases](https://img.shields.io/github/downloads/spoinkynl/artemis/setup.exe.svg)]()
+[![Build status](http://build.artemis-rgb.com/app/rest/builds/buildType(id:Artemis_Build)/statusIcon)](http://build.artemis-rgb.com/viewType.html?buildTypeId=Artemis_Build&guest=1)
 [![GitHub license](https://img.shields.io/badge/license-GPL3-blue.svg)](https://raw.githubusercontent.com/SpoinkyNL/Artemis/master/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/SpoinkyNL/Artemis.svg)](https://github.com/SpoinkyNL/Artemis/stargazers)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VQBAEJYUFLU4J) 
@@ -8,6 +9,9 @@
 Artemis adds highly configurable support for several games to a range of RGB keyboards, mice and headsets.  
 **Download**: https://github.com/SpoinkyNL/Artemis/releases  
 **FAQ**: https://github.com/SpoinkyNL/Artemis/wiki/Frequently-Asked-Questions-(FAQ)
+
+### Join us on Discord
+Click the following invite to join the Artemis Discord server: https://discordapp.com/invite/S3MVaC9
 
 ### Current Features
  - Support for Corsair, Logitech, Razer and Cooler Master keyboards.

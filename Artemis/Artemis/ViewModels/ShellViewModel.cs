@@ -2,9 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using Artemis.DAL;
-using Artemis.Events;
 using Artemis.Managers;
 using Artemis.Services;
 using Artemis.Settings;
@@ -22,51 +20,41 @@ namespace Artemis.ViewModels
     {
         private readonly IKernel _kernel;
         private string _activeIcon;
-        private bool _checked;
+        private bool _checkedForDuplicate;
         private bool _enabled;
-        private string _toggleText;
         private bool _exiting;
+        private string _toggleText;
 
-        public ShellViewModel(IKernel kernel, MainManager mainManager, MetroDialogService metroDialogService,
-            FlyoutSettingsViewModel flyoutSettings)
+        public ShellViewModel(IKernel kernel, MainManager mainManager, MetroDialogService metroDialogService, FlyoutSettingsViewModel flyoutSettings)
         {
             _kernel = kernel;
+            var checkedForUpdate = false;
 
             MainManager = mainManager;
             MetroDialogService = metroDialogService;
 
             DisplayName = "Artemis";
+            ActiveIcon = "../Resources/logo-disabled.ico";
             GeneralSettings = SettingsProvider.Load<GeneralSettings>();
             Flyouts = new BindableCollection<FlyoutBaseViewModel>
             {
                 flyoutSettings
             };
 
-            MainManager.EnabledChanged += (sender, args) => Enabled = args.Enabled;
+            MainManager.EnabledChanged += (sender, args) =>
+            {
+                Enabled = args.Enabled;
+                // Check for updates once if auto update is enabled and the window is shown
+                if (GeneralSettings.AutoUpdate && !checkedForUpdate && CanHideWindow)
+                {
+                    checkedForUpdate = true;
+                    Updater.CheckForUpdate(MetroDialogService);
+                }
+            };
+
 
             // This gets updated automatically but during startup lets quickly preset it
             Enabled = GeneralSettings.Suspended;
-        }
-        
-        protected override void OnViewReady(object view)
-        {
-            base.OnViewReady(view);
-
-            Task.Run(() => StartupHide());
-        }
-
-        private void StartupHide()
-        {
-            // TODO: This is probably an awful idea. I can't reliably hook into the view being ready to be hidden
-            Thread.Sleep(500);
-
-            if (GeneralSettings.ShowOnStartup)
-                ShowWindow();
-            else
-                HideWindow();
-
-            if (!GeneralSettings.Suspended)
-                MainManager.EnableProgram();
         }
 
         public Mutex Mutex { get; set; }
@@ -81,10 +69,11 @@ namespace Artemis.ViewModels
 
         public bool Enabled
         {
-            get { return _enabled; }
+            get => _enabled;
             set
             {
-                if (value == _enabled) return;
+                if (value == _enabled)
+                    return;
                 _enabled = value;
 
                 ToggleText = _enabled ? "Disable Artemis" : "Enable Artemis";
@@ -95,7 +84,7 @@ namespace Artemis.ViewModels
 
         public string ActiveIcon
         {
-            get { return _activeIcon; }
+            get => _activeIcon;
             set
             {
                 _activeIcon = value;
@@ -105,13 +94,35 @@ namespace Artemis.ViewModels
 
         public string ToggleText
         {
-            get { return _toggleText; }
+            get => _toggleText;
             set
             {
-                if (value == _toggleText) return;
+                if (value == _toggleText)
+                    return;
                 _toggleText = value;
                 NotifyOfPropertyChange(() => ToggleText);
             }
+        }
+
+        protected override void OnViewReady(object view)
+        {
+            base.OnViewReady(view);
+
+            Task.Run(() => StartupHide());
+        }
+
+        private void StartupHide()
+        {
+            // TODO: This is probably an awful idea. I can't reliably hook into the view being ready to be hidden
+            Thread.Sleep(500);
+
+            if (GeneralSettings.ShowOnStartup || Environment.GetCommandLineArgs().Contains("--show"))
+                ShowWindow();
+            else
+                HideWindow();
+
+            if (!GeneralSettings.Suspended)
+                MainManager.EnableProgram();
         }
 
         public override void CanClose(Action<bool> callback)
@@ -139,7 +150,6 @@ namespace Artemis.ViewModels
             // Show certain dialogs if needed
             CheckKeyboardState();
             CheckDuplicateInstances();
-            Updater.CheckChangelog(MetroDialogService);
 
             // Run this on the UI thread to avoid having to use dispatchers in VMs
             Execute.OnUIThread(ActivateViews);
@@ -147,7 +157,11 @@ namespace Artemis.ViewModels
 
         private void ActivateViews()
         {
-            var vms = _kernel.GetAll<BaseViewModel>().ToList();
+            var vms = _kernel.GetAll<BaseViewModel>()
+                .OrderBy(v => v.DisplayName != "Welcome")
+                .ThenBy(v => v.DisplayName)
+                .ToList();
+
             Items.Clear();
             Items.AddRange(vms);
             ActivateItem(vms.FirstOrDefault());
@@ -230,12 +244,11 @@ namespace Artemis.ViewModels
 
         private void CheckDuplicateInstances()
         {
-            if (_checked)
+            if (_checkedForDuplicate)
                 return;
-            _checked = true;
+            _checkedForDuplicate = true;
 
-            bool aIsNewInstance;
-            Mutex = new Mutex(true, "ArtemisMutex", out aIsNewInstance);
+            Mutex = new Mutex(true, "ArtemisMutex", out var aIsNewInstance);
             if (aIsNewInstance)
                 return;
 

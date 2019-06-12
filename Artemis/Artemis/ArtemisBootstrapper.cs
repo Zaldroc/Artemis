@@ -1,24 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Artemis.DAL;
 using Artemis.InjectionModules;
+using Artemis.Services;
 using Artemis.Settings;
 using Artemis.Utilities;
+using Artemis.Utilities.ActiveWindowDetection;
 using Artemis.Utilities.Converters;
 using Artemis.Utilities.DataReaders;
-using Artemis.Utilities.Keyboard;
 using Artemis.ViewModels;
 using Caliburn.Micro;
 using Newtonsoft.Json;
 using Ninject;
-using NLog;
-using LogManager = NLog.LogManager;
 
 namespace Artemis
 {
@@ -28,14 +25,27 @@ namespace Artemis
 
         public ArtemisBootstrapper()
         {
+            // Make sure the data folder exists
+            GeneralHelpers.SetupDataFolder();
+
             // Start logging before anything else
             Logging.SetupLogging(SettingsProvider.Load<GeneralSettings>().LogLevel);
             // Restore DDLs before interacting with any SDKs
             DllManager.RestoreLogitechDll();
+            // Check compatibility before trying to boot further
+            CompatibilityService.CheckRivaTuner();
+            Updater.CleanSquirrel();
 
             Initialize();
             BindSpecialValues();
-            KeyboardHook.SetupKeyboardHook();
+
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomainOnUnhandledException;
+        }
+
+        private void CurrentDomainOnUnhandledException(object sender, UnhandledExceptionEventArgs unhandledExceptionEventArgs)
+        {
+            // Get rid of the keyboard hook in case of a crash, otherwise input freezes up system wide until Artemis is gone
+            InputHook.Stop();
         }
 
         private void BindSpecialValues()
@@ -47,14 +57,14 @@ namespace Artemis
                 var e = ctx.EventArgs as MouseEventArgs;
 
                 // If there is an image control, get the scaled position
-                if ((img != null) && (e != null))
+                if (img != null && e != null)
                 {
                     var position = e.GetPosition(img);
-                    return (int) (img.Source.Width*(position.X/img.ActualWidth));
+                    return (int) (img.Source.Width * (position.X / img.ActualWidth));
                 }
 
                 // If there is another type of of IInputControl get the non-scaled position - or do some processing to get a scaled position, whatever needs to happen
-                if ((e != null) && (input != null))
+                if (e != null && input != null)
                     return e.GetPosition(input).X;
 
                 // Return 0 if no processing could be done
@@ -67,14 +77,14 @@ namespace Artemis
                 var e = ctx.EventArgs as MouseEventArgs;
 
                 // If there is an image control, get the scaled position
-                if ((img != null) && (e != null))
+                if (img != null && e != null)
                 {
                     var position = e.GetPosition(img);
-                    return (int) (img.Source.Width*(position.Y/img.ActualWidth));
+                    return (int) (img.Source.Width * (position.Y / img.ActualWidth));
                 }
 
                 // If there is another type of of IInputControl get the non-scaled position - or do some processing to get a scaled position, whatever needs to happen
-                if ((e != null) && (input != null))
+                if (e != null && input != null)
                     return e.GetPosition(input).Y;
 
                 // Return 0 if no processing could be done
@@ -84,13 +94,6 @@ namespace Artemis
 
         protected override void Configure()
         {
-            // Sleep for a while if ran from autorun to allow full system boot
-            if (Environment.GetCommandLineArgs().Contains("--autorun"))
-            {
-                var logger = LogManager.GetCurrentClassLogger();
-                logger.Info("Artemis was run using the autorun shortcut, sleeping for 15 sec.");
-                Thread.Sleep(15000);
-            }
             _kernel = new StandardKernel(new BaseModules(), new ManagerModules());
 
             _kernel.Bind<IWindowManager>().To<WindowManager>().InSingletonScope();
@@ -106,7 +109,7 @@ namespace Artemis
 
             //TODO DarthAffe 17.12.2016: Is this the right location for this?
             //TODO Move to Mainmanager and make disposable
-            ActiveWindowHelper.Initialize();
+            ActiveWindowHelper.SetActiveWindowDetectionType(SettingsProvider.Load<GeneralSettings>().ActiveWindowDetection);
         }
 
         protected override void OnExit(object sender, EventArgs e)
@@ -137,6 +140,7 @@ namespace Artemis
         protected override void OnStartup(object sender, StartupEventArgs e)
         {
             DisplayRootViewFor<ShellViewModel>();
+            InputHook.Start();
         }
     }
 }

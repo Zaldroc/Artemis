@@ -8,6 +8,7 @@ namespace Artemis.Modules.Games.Overwatch
     {
         public OverwatchStatus Status { get; set; }
         public OverwatchCharacter Character { get; set; }
+        public string CharacterColor { get; set; }
         public bool UltimateReady { get; set; }
         public bool Ability1Ready { get; set; }
         public bool Ability2Ready { get; set; }
@@ -48,6 +49,9 @@ namespace Artemis.Modules.Games.Overwatch
         Symmetra,
         Zenyatta,
         Ana,
-        Sombra
+        Sombra,
+        Orisa,
+        Doomfist,
+        Moira
     }
 }

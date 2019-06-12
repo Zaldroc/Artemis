@@ -11,7 +11,6 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using Artemis.DAL;
-using Artemis.DeviceProviders;
 using Artemis.Events;
 using Artemis.Managers;
 using Artemis.Models;
@@ -20,17 +19,20 @@ using Artemis.Profiles;
 using Artemis.Profiles.Layers.Interfaces;
 using Artemis.Profiles.Layers.Models;
 using Artemis.Profiles.Layers.Types.Folder;
+using Artemis.Profiles.Lua.Modules.Gui;
 using Artemis.Properties;
 using Artemis.Services;
 using Artemis.Styles.DropTargetAdorners;
 using Artemis.Utilities;
+using Artemis.Utilities.ActiveWindowDetection;
 using Caliburn.Micro;
-using Castle.Components.DictionaryAdapter;
 using GongSolutions.Wpf.DragDrop;
 using MahApps.Metro;
+using MahApps.Metro.Controls;
 using MahApps.Metro.Controls.Dialogs;
-using NuGet;
+using Newtonsoft.Json;
 using Application = System.Windows.Application;
+using Clipboard = System.Windows.Clipboard;
 using Cursor = System.Windows.Input.Cursor;
 using Cursors = System.Windows.Input.Cursors;
 using DragDropEffects = System.Windows.DragDropEffects;
@@ -42,10 +44,12 @@ namespace Artemis.ViewModels
 {
     public sealed class ProfileEditorViewModel : Screen, IDropTarget
     {
+        private readonly KeybindModel _copyKeybind;
         private readonly DeviceManager _deviceManager;
         private readonly MetroDialogService _dialogService;
         private readonly LoopManager _loopManager;
         private readonly ModuleModel _moduleModel;
+        private readonly KeybindModel _pasteKeybind;
         private ImageSource _keyboardPreview;
         private ObservableCollection<LayerModel> _layers;
         private ObservableCollection<string> _profileNames;
@@ -53,22 +57,25 @@ namespace Artemis.ViewModels
         private LayerModel _selectedLayer;
         private bool _showAll;
 
-        public ProfileEditorViewModel(ProfileEditorModel profileEditorModel, DeviceManager deviceManager,
-            LoopManager loopManager, ModuleModel moduleModel, MetroDialogService dialogService)
+        public ProfileEditorViewModel(ProfileEditorModel profileEditorModel, DeviceManager deviceManager, LoopManager loopManager, LuaManager luaManager, ModuleModel moduleModel, MetroDialogService dialogService)
         {
             _deviceManager = deviceManager;
             _loopManager = loopManager;
             _moduleModel = moduleModel;
             _dialogService = dialogService;
-
+            _copyKeybind = new KeybindModel("copy", new HotKey(Key.C, ModifierKeys.Control), PressType.Down, LayerToClipboard);
+            _pasteKeybind = new KeybindModel("paste", new HotKey(Key.V, ModifierKeys.Control), PressType.Up, ClipboardToLayer);
+            _placeholderKeyboard = KeyboardPreview = ImageUtilities.BitmapToBitmapImage(Resources.none);
             ProfileNames = new ObservableCollection<string>();
             Layers = new ObservableCollection<LayerModel>();
             ProfileEditorModel = profileEditorModel;
+            LuaManager = luaManager;
             ShowAll = true;
 
             PropertyChanged += EditorStateHandler;
             _deviceManager.OnKeyboardChanged += DeviceManagerOnOnKeyboardChanged;
             _moduleModel.ProfileChanged += ModuleModelOnProfileChanged;
+
             LoadProfiles();
         }
 
@@ -77,6 +84,8 @@ namespace Artemis.ViewModels
             base.OnActivate();
 
             _loopManager.RenderCompleted += LoopManagerOnRenderCompleted;
+            KeybindManager.AddOrUpdate(_copyKeybind);
+            KeybindManager.AddOrUpdate(_pasteKeybind);
         }
 
         public new void OnDeactivate(bool close)
@@ -85,9 +94,16 @@ namespace Artemis.ViewModels
 
             SaveSelectedProfile();
             _loopManager.RenderCompleted -= LoopManagerOnRenderCompleted;
+            KeybindManager.Remove(_copyKeybind);
+            KeybindManager.Remove(_pasteKeybind);
         }
 
         #region LUA
+
+        public void ClickedLuaButton(EditorButton button)
+        {
+            button.Invoke();
+        }
 
         public void EditLua()
         {
@@ -110,13 +126,15 @@ namespace Artemis.ViewModels
         #region Properties
 
         public ProfileEditorModel ProfileEditorModel { get; }
+        public LuaManager LuaManager { get; }
 
         public ObservableCollection<string> ProfileNames
         {
             get { return _profileNames; }
             set
             {
-                if (Equals(value, _profileNames)) return;
+                if (Equals(value, _profileNames))
+                    return;
                 _profileNames = value;
                 NotifyOfPropertyChange(() => ProfileNames);
             }
@@ -127,7 +145,8 @@ namespace Artemis.ViewModels
             get { return _layers; }
             set
             {
-                if (Equals(value, _layers)) return;
+                if (Equals(value, _layers))
+                    return;
                 _layers = value;
                 NotifyOfPropertyChange(() => Layers);
             }
@@ -139,7 +158,8 @@ namespace Artemis.ViewModels
             get { return _keyboardPreview; }
             set
             {
-                if (Equals(value, _keyboardPreview)) return;
+                if (Equals(value, _keyboardPreview))
+                    return;
                 _keyboardPreview = value;
                 NotifyOfPropertyChange(() => KeyboardPreview);
             }
@@ -150,7 +170,8 @@ namespace Artemis.ViewModels
             get { return _showAll; }
             set
             {
-                if (value == _showAll) return;
+                if (value == _showAll)
+                    return;
                 _showAll = value;
                 NotifyOfPropertyChange();
             }
@@ -182,18 +203,16 @@ namespace Artemis.ViewModels
             }
         }
 
-        public ImageSource KeyboardImage => ImageUtilities.BitmapToBitmapImage(
-            _deviceManager.ActiveKeyboard?.PreviewSettings.Image ?? Resources.none);
-
         public ProfileModel SelectedProfile => _moduleModel?.ProfileModel;
-        public PreviewSettings? PreviewSettings => _deviceManager.ActiveKeyboard?.PreviewSettings;
         public bool ProfileSelected => SelectedProfile != null;
         public bool LayerSelected => SelectedProfile != null && SelectedLayer != null;
-
-        public bool EditorEnabled => SelectedProfile != null && !SelectedProfile.IsDefault &&
-                                     _deviceManager.ActiveKeyboard != null;
-
+        public bool EditorEnabled => SelectedProfile != null && !SelectedProfile.IsDefault && _deviceManager.ActiveKeyboard != null;
         public bool LuaButtonVisible => !_moduleModel.IsOverlay;
+
+        /// <summary>
+        ///     Set to true to keep the preview active if using the profile editor
+        /// </summary>
+        public bool KeepActive { get; set; }
 
         #endregion
 
@@ -212,8 +231,10 @@ namespace Artemis.ViewModels
             if (SelectedLayer == null)
                 return;
 
+            KeepActive = true;
             ProfileEditorModel.EditLayer(SelectedLayer, _moduleModel.DataModel);
             UpdateLayerList(SelectedLayer);
+            KeepActive = false;
         }
 
         public void EditLayer(LayerModel layerModel)
@@ -221,8 +242,10 @@ namespace Artemis.ViewModels
             if (layerModel == null)
                 return;
 
+            KeepActive = true;
             ProfileEditorModel.EditLayer(layerModel, _moduleModel.DataModel);
             UpdateLayerList(layerModel);
+            KeepActive = false;
         }
 
         public LayerModel AddLayer()
@@ -268,6 +291,7 @@ namespace Artemis.ViewModels
             if (layer == null)
                 return;
 
+            KeepActive = true;
             var newName = await _dialogService.ShowInputDialog("Rename layer", "Please enter a name for the layer",
                 new MetroDialogSettings {DefaultText = layer.Name});
 
@@ -277,6 +301,7 @@ namespace Artemis.ViewModels
 
             layer.Name = newName;
             UpdateLayerList(layer);
+            KeepActive = false;
         }
 
         /// <summary>
@@ -302,6 +327,48 @@ namespace Artemis.ViewModels
             UpdateLayerList(clone);
         }
 
+        public void LayerToClipboard()
+        {
+            if (SelectedLayer == null || !ActiveWindowHelper.MainWindowActive || !IsActive)
+                return;
+
+            // Probably not how the cool kids do it but leveraging on JsonConvert gives flawless serialization
+            GeneralHelpers.ExecuteSta(() => Clipboard.SetData("layer", JsonConvert.SerializeObject(SelectedLayer)));
+        }
+
+        public void ClipboardToLayer()
+        {
+            if (!ActiveWindowHelper.MainWindowActive || !IsActive)
+                return;
+
+            try
+            {
+                GeneralHelpers.ExecuteSta(() =>
+                {
+                    var data = (string) Clipboard.GetData("layer");
+                    if (data == null)
+                        return;
+
+                    var layerModel = JsonConvert.DeserializeObject<LayerModel>(data);
+                    if (layerModel == null)
+                        return;
+
+                    if (SelectedLayer != null)
+                        SelectedLayer.InsertAfter(layerModel);
+                    else
+                    {
+                        SelectedProfile.Layers.Add(layerModel);
+                        SelectedProfile.FixOrder();
+                    }
+                    Execute.OnUIThread(() => UpdateLayerList(layerModel));
+                });
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+        }
+
         private void UpdateLayerList(LayerModel selectModel)
         {
             // Update the UI
@@ -309,7 +376,10 @@ namespace Artemis.ViewModels
             SelectedLayer = null;
 
             if (SelectedProfile != null)
-                Layers.AddRange(SelectedProfile.Layers);
+            {
+                foreach (var selectedProfileLayer in SelectedProfile.Layers)
+                    Layers.Add(selectedProfileLayer);
+            }
 
             if (selectModel == null)
                 return;
@@ -319,6 +389,7 @@ namespace Artemis.ViewModels
             {
                 Thread.Sleep(100);
                 SelectedLayer = selectModel;
+                SelectedProfile?.OnOnProfileUpdatedEvent();
             });
         }
 
@@ -335,9 +406,10 @@ namespace Artemis.ViewModels
             {
                 ProfileNames.Clear();
                 if (_moduleModel != null && _deviceManager.ActiveKeyboard != null)
-                    ProfileNames.AddRange(ProfileProvider.GetProfileNames(_deviceManager.ActiveKeyboard, _moduleModel));
-
-                NotifyOfPropertyChange(() => SelectedProfile);
+                {
+                    foreach (var profileName in ProfileProvider.GetProfileNames(_deviceManager.ActiveKeyboard, _moduleModel))
+                        ProfileNames.Add(profileName);
+                }
             });
         }
 
@@ -345,6 +417,9 @@ namespace Artemis.ViewModels
         {
             if (_saving || SelectedProfile == null || _deviceManager.ChangingKeyboard)
                 return;
+
+            SelectedProfile.Width = _deviceManager.ActiveKeyboard.Width;
+            SelectedProfile.Height = _deviceManager.ActiveKeyboard.Height;
 
             _saving = true;
             try
@@ -362,8 +437,7 @@ namespace Artemis.ViewModels
         {
             if (_deviceManager.ActiveKeyboard == null)
             {
-                _dialogService.ShowMessageBox("Cannot add profile.",
-                    "To add a profile, please select a keyboard in the options menu first.");
+                _dialogService.ShowMessageBox("Cannot add profile.", "To add a profile, please select a keyboard in the options menu first.");
                 return;
             }
 
@@ -372,7 +446,7 @@ namespace Artemis.ViewModels
                 return;
 
             LoadProfiles();
-            _moduleModel.ChangeProfile(profile);
+            SelectedProfileName = profile.Name;
         }
 
         public async void RenameProfile()
@@ -384,7 +458,8 @@ namespace Artemis.ViewModels
             await ProfileEditorModel.RenameProfile(SelectedProfile);
 
             LoadProfiles();
-            _moduleModel.ChangeProfile(renameProfile);
+            SelectedProfileName = "Default";
+            SelectedProfileName = renameProfile.Name;
         }
 
         public async void DuplicateProfile()
@@ -397,7 +472,7 @@ namespace Artemis.ViewModels
                 return;
 
             LoadProfiles();
-            _moduleModel.ChangeProfile(newProfle);
+            SelectedProfileName = newProfle.Name;
         }
 
         public async void DeleteProfile()
@@ -405,12 +480,17 @@ namespace Artemis.ViewModels
             if (SelectedProfile == null)
                 return;
 
-            var confirmed = await ProfileEditorModel.DeleteProfile(SelectedProfile, _moduleModel);
+            var confirmed = await ProfileEditorModel.ConfirmDeleteProfile(SelectedProfile, _moduleModel);
             if (!confirmed)
                 return;
 
+            var deleteProfile = SelectedProfile;
+
+            _moduleModel.ChangeProfile(null);
+            ProfileProvider.DeleteProfile(deleteProfile);
+
             LoadProfiles();
-            ProfileEditorModel.ChangeProfileByName(_moduleModel, null);
+            SelectedProfileName = "Default";
         }
 
         public async void ImportProfile()
@@ -427,7 +507,7 @@ namespace Artemis.ViewModels
                 return;
 
             LoadProfiles();
-            _moduleModel.ChangeProfile(importProfile);
+            SelectedProfileName = importProfile.Name;
         }
 
         public void ExportProfile()
@@ -447,21 +527,45 @@ namespace Artemis.ViewModels
 
         #region Rendering
 
+        private readonly ImageSource _placeholderKeyboard;
+
         private void LoopManagerOnRenderCompleted(object sender, EventArgs eventArgs)
         {
             // Besides the usual checks, also check if the ActiveKeyboard isn't the NoneKeyboard
-            if (SelectedProfile == null || _deviceManager.ActiveKeyboard == null ||
-                _deviceManager.ActiveKeyboard.Slug == "none")
+            if (SelectedProfile == null || _deviceManager.ActiveKeyboard == null || _deviceManager.ActiveKeyboard.Slug == "none")
             {
-                KeyboardPreview = null;
-
                 // Setup layers for the next frame
                 if (_moduleModel.IsInitialized && ActiveWindowHelper.MainWindowActive)
                     _moduleModel.PreviewLayers = new List<LayerModel>();
 
+                if (!Equals(KeyboardPreview, _placeholderKeyboard))
+                    KeyboardPreview = _placeholderKeyboard;
+
                 return;
             }
 
+            var renderedLayers = RenderLayers();
+            var visual = new DrawingVisual();
+            var previewSettings = _deviceManager.ActiveKeyboard.PreviewSettings;
+            using (var drawingContext = visual.RenderOpen())
+            {
+                var baseRect = new Rect(0, 0, previewSettings.BackgroundRectangle.Width, previewSettings.BackgroundRectangle.Height);
+                drawingContext.PushClip(new RectangleGeometry(baseRect));
+                // Draw the keyboard image
+                drawingContext.DrawImage(previewSettings.Image, baseRect);
+                // Draw the layers semi-transparent
+                drawingContext.PushOpacity(0.8);
+                drawingContext.DrawImage(renderedLayers, previewSettings.OverlayRectangle);
+                drawingContext.Pop();
+                drawingContext.Pop();
+            }
+            var drawnPreview = new DrawingImage(visual.Drawing);
+            drawnPreview.Freeze();
+            KeyboardPreview = drawnPreview;
+        }
+
+        private DrawingImage RenderLayers()
+        {
             var renderLayers = GetRenderLayers();
             // Draw the current frame to the preview
             var keyboardRect = _deviceManager.ActiveKeyboard.KeyboardRectangle();
@@ -487,7 +591,7 @@ namespace Artemis.ViewModels
                     var preview = new DrawingImage();
                     preview.Freeze();
                     KeyboardPreview = preview;
-                    return;
+                    return new DrawingImage();
                 }
 
                 var pen = new Pen(new SolidColorBrush((Color) accentColor), 0.4);
@@ -521,11 +625,12 @@ namespace Artemis.ViewModels
             }
             var drawnPreview = new DrawingImage(visual.Drawing);
             drawnPreview.Freeze();
-            KeyboardPreview = drawnPreview;
 
             // Setup layers for the next frame
             if (_moduleModel.IsInitialized && ActiveWindowHelper.MainWindowActive)
                 _moduleModel.PreviewLayers = renderLayers;
+
+            return drawnPreview;
         }
 
         public List<LayerModel> GetRenderLayers()
@@ -536,7 +641,7 @@ namespace Artemis.ViewModels
                 return SelectedProfile.GetRenderLayers(null, false, true);
 
             if (SelectedLayer == null || !SelectedLayer.Enabled)
-                return new EditableList<LayerModel>();
+                return new List<LayerModel>();
 
             if (SelectedLayer.LayerType is FolderType)
                 drawLayers = SelectedLayer.GetRenderLayers(null, false, true);
@@ -581,13 +686,8 @@ namespace Artemis.ViewModels
             if (_draggingLayer != null)
                 return;
 
-            var keyboard = _deviceManager.ActiveKeyboard;
-            var pos = e.GetPosition((Image) e.OriginalSource);
-            var x = pos.X / ((double) keyboard.PreviewSettings.Width / keyboard.Width);
-            var y = pos.Y / ((double) keyboard.PreviewSettings.Height / keyboard.Height);
-
-            var hoverLayer = GetLayers().Where(l => l.MustDraw())
-                .FirstOrDefault(l => l.Properties.PropertiesRect(1).Contains(x, y));
+            var pos = GetScaledPosition(e);
+            var hoverLayer = GetHoverLayer(pos.X, pos.Y);
 
             if (hoverLayer != null)
                 SelectedLayer = hoverLayer;
@@ -602,14 +702,10 @@ namespace Artemis.ViewModels
             if (SelectedProfile == null)
                 return;
 
-            var pos = e.GetPosition((Image) e.OriginalSource);
-            var keyboard = _deviceManager.ActiveKeyboard;
-            var x = pos.X / ((double) keyboard.PreviewSettings.Width / keyboard.Width);
-            var y = pos.Y / ((double) keyboard.PreviewSettings.Height / keyboard.Height);
-            var hoverLayer = GetLayers().Where(l => l.MustDraw())
-                .FirstOrDefault(l => l.Properties.PropertiesRect(1).Contains(x, y));
+            var pos = GetScaledPosition(e);
+            var hoverLayer = GetHoverLayer(pos.X, pos.Y);
 
-            HandleDragging(e, x, y, hoverLayer);
+            HandleDragging(e, pos.X, pos.Y, hoverLayer);
 
             if (hoverLayer == null)
             {
@@ -621,15 +717,42 @@ namespace Artemis.ViewModels
             if (hoverLayer == SelectedLayer)
             {
                 var rect = hoverLayer.Properties.PropertiesRect(1);
-                KeyboardPreviewCursor =
-                    Math.Sqrt(Math.Pow(x - rect.BottomRight.X, 2) + Math.Pow(y - rect.BottomRight.Y, 2)) < 0.6
-                        ? Cursors.SizeNWSE
-                        : Cursors.SizeAll;
+                KeyboardPreviewCursor = Math.Sqrt(Math.Pow(pos.X - rect.BottomRight.X, 2) + Math.Pow(pos.Y - rect.BottomRight.Y, 2)) < 0.6
+                    ? Cursors.SizeNWSE
+                    : Cursors.SizeAll;
             }
             else
-            {
                 KeyboardPreviewCursor = Cursors.Hand;
-            }
+        }
+
+
+        private Point GetScaledPosition(MouseEventArgs e)
+        {
+            var previewSettings = _deviceManager.ActiveKeyboard.PreviewSettings;
+
+            var sourceImage = (Image) e.OriginalSource;
+            var pos = e.GetPosition(sourceImage);
+            var widthScale = sourceImage.ActualWidth / _deviceManager.ActiveKeyboard.PreviewSettings.BackgroundRectangle.Width;
+            var heightScale = sourceImage.ActualHeight / _deviceManager.ActiveKeyboard.PreviewSettings.BackgroundRectangle.Height;
+
+            // Remove the preview settings' offset from the cursor postion
+            pos.X = pos.X - previewSettings.OverlayRectangle.X * widthScale;
+            pos.Y = pos.Y - previewSettings.OverlayRectangle.Y * heightScale;
+
+            // Scale the X and Y position down to match the keyboard's physical size and thus the layer positions
+            pos.X = pos.X * (SelectedProfile.Width / (previewSettings.OverlayRectangle.Width * widthScale));
+            pos.Y = pos.Y * (SelectedProfile.Height / (previewSettings.OverlayRectangle.Height * heightScale));
+
+            return pos;
+        }
+
+        private LayerModel GetHoverLayer(double x, double y)
+        {
+            // Prefer the selected layer as the hover layer even if it's underneath something else
+            if (SelectedLayer != null && SelectedLayer.Properties.PropertiesRect(1).Contains(x, y))
+                return SelectedLayer;
+
+            return GetLayers().Where(l => l.MustDraw()).FirstOrDefault(l => l.Properties.PropertiesRect(1).Contains(x, y));
         }
 
         public Cursor KeyboardPreviewCursor
@@ -637,7 +760,8 @@ namespace Artemis.ViewModels
             get { return _keyboardPreviewCursor; }
             set
             {
-                if (Equals(value, _keyboardPreviewCursor)) return;
+                if (Equals(value, _keyboardPreviewCursor))
+                    return;
                 _keyboardPreviewCursor = value;
                 NotifyOfPropertyChange(() => KeyboardPreviewCursor);
             }
@@ -806,12 +930,10 @@ namespace Artemis.ViewModels
         }
 
         /// <summary>
-        ///     Handles chaning the active keyboard, updating the preview image and profiles collection
+        ///     Handles chaning the active keyboard, updating the profiles collection
         /// </summary>
         private void DeviceManagerOnOnKeyboardChanged(object sender, KeyboardChangedEventArgs e)
         {
-            NotifyOfPropertyChange(() => PreviewSettings);
-            NotifyOfPropertyChange(() => KeyboardImage);
             LoadProfiles();
         }
 
@@ -826,7 +948,10 @@ namespace Artemis.ViewModels
             Layers.Clear();
 
             if (SelectedProfile != null)
-                Layers.AddRange(SelectedProfile.Layers);
+            {
+                foreach (var selectedProfileLayer in SelectedProfile.Layers)
+                    Layers.Add(selectedProfileLayer);
+            }
 
             NotifyOfPropertyChange(() => ProfileSelected);
         }
