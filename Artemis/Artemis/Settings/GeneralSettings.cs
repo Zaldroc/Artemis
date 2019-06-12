@@ -16,8 +16,8 @@ namespace Artemis.Settings
     {
         public GeneralSettings()
         {
-            ThemeManager.AddAccent("CorsairYellow", new Uri("pack://application:,,,/Styles/Accents/CorsairYellow.xaml"));
-            ApplyAutorun();
+            //ThemeManager.AddAccent("CorsairYellow", new Uri("pack://application:,,,/Styles/Accents/CorsairYellow.xaml"));
+            //ApplyAutorun();
         }
 
         [DefaultValue("GeneralProfile")]
